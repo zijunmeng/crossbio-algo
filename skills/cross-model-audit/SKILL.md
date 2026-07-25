@@ -55,5 +55,5 @@ fields to fix:
 ```
 
 ## References
-- `~/.claude/skills/_shared/research-design-handoff.md` — the viability→design contract; audit inherits its target_tier ruler.
-- `~/.claude/skills/algorithm-design/cross-domain-inspiration.md` — when auditing an algorithm design, check inspiration actually crossed domains.
+- `_shared/research-design-handoff.md` — the viability→design contract; audit inherits its target_tier ruler.
+- `cross-domain-inspiration.md` (attachment of **crossbio-algo:algorithm-design**) — when auditing an algorithm design, check inspiration actually crossed domains.

@@ -1,12 +1,12 @@
 ---
-name: using-research-copilot
-description: Bootstrap for the research-copilot skill loop. Use at the start of any research / algorithm / method / tool task, or when the user proposes a research direction. Introduces the brainstorm → viability → audit → design → spec loop, when to trigger each skill, the priority order, and the fallback mechanism. 触发场景：用户提出研究方向 / 算法 / 工具 / 方法，或会话开始需要知道这套研究闭环时。
+name: using-crossbio-algo
+description: Bootstrap for the crossbio-algo skill loop. Use at the start of any research / algorithm / method / tool task, or when the user proposes a research direction. Introduces the brainstorm → viability → audit → design → spec loop, when to trigger each skill, the priority order, and the fallback mechanism. 触发场景：用户提出研究方向 / 算法 / 工具 / 方法，或会话开始需要知道这套研究闭环时。
 ---
 
-# Using Research Copilot
+# Using Crossbio-Algo
 
 ## Overview
-This is the **bootstrap** for the research-copilot skill loop — a coordinated chain that turns a fuzzy research interest into a vetted, executable algorithm spec, with scientific-honesty discipline. Think of it as the map: it tells you which skill to use when, and how they connect.
+This is the **bootstrap** for the crossbio-algo skill loop — a coordinated chain that turns a fuzzy research interest into a vetted, executable algorithm spec, with scientific-honesty discipline. Think of it as the map: it tells you which skill to use when, and how they connect.
 
 ## The Loop
 ```
@@ -44,5 +44,5 @@ brainstorm  (N candidate ideas; dev-mode invents algorithms from math essence + 
 Each skill auto-triggers from its own `description`. To force a stage, use the Skill tool with the skill name. Read the individual SKILL.md files for each skill's internal rules.
 
 ## References
-- `~/.claude/skills/_shared/research-design-handoff.md` — the full loop contract + handoff blocks + fallback mechanism.
-- Individual skill SKILL.md files for stage-specific rules.
+- `_shared/research-design-handoff.md` — the full loop contract + handoff blocks + fallback mechanism.
+- Individual skill SKILL.md files for stage-specific rules (invoked as **crossbio-algo:brainstorm**, **crossbio-algo:topic-viability-assessment**, **crossbio-algo:algorithm-design**, **crossbio-algo:spec-writing**, **crossbio-algo:cross-model-audit**).

@@ -1,4 +1,4 @@
-# research-copilot
+# crossbio-algo
 
 **Autonomous research loop for computational biology** — turns a fuzzy research interest into a vetted, executable algorithm spec, with scientific-honesty discipline.
 
@@ -10,7 +10,7 @@ Generic coding agents (Claude Code / Codex) can run analyses and write code, but
 - **define failure boundaries** (avoid overclaiming accuracy),
 - **produce executable specs** (avoid "simple code").
 
-`research-copilot` installs these as a coordinated skill loop.
+`crossbio-algo` installs these as a coordinated skill loop.
 
 ## The loop
 ```
@@ -27,18 +27,18 @@ brainstorm  (N candidate ideas; dev-mode: algorithm-abstraction + cross-domain i
 
 ## Install
 ```bash
-git clone https://github.com/YOUR/research-copilot
+git clone https://github.com/YOUR/crossbio-algo
 # user-level (all projects):
-cp -r research-copilot/skills/* ~/.claude/skills/
+cp -r crossbio-algo/skills/* ~/.claude/skills/
 # recommended: copy the bootstrap template into your project
-cp research-copilot/CLAUDE.md ./CLAUDE.md   # then fill in your research context
+cp crossbio-algo/CLAUDE.md ./CLAUDE.md   # then fill in your research context
 ```
 Or install as a Claude Code plugin via the marketplace (plugin.json provided).
 
 ## Skills
 | skill | role |
 |---|---|
-| `using-research-copilot` | **bootstrap**: the loop, when to trigger each, priority order |
+| `using-crossbio-algo` | **bootstrap**: the loop, when to trigger each, priority order |
 | `brainstorm` | 5-round ideation; dev-mode = algorithm-abstraction + cross-domain (invents, doesn't recombine) |
 | `topic-viability-assessment` | competitor deep-comparison table (input/method/output/limitation/delta); tier-aware score; FORBID judging crowdedness from names |
 | `algorithm-design` | 4-step inventive design; autonomous + externalized reasoning; pause only at global forks |

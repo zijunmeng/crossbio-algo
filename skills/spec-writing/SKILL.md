@@ -21,7 +21,7 @@ algorithm-design (6 fields)  →  spec-writing (this skill: 3 artifacts)  →  c
 
 ## Input
 
-The 6 fields from `~/.claude/skills/algorithm-design/SKILL.md`:
+The 6 fields from **crossbio-algo:algorithm-design**:
 `mathematical_abstraction` / `cross_domain_inspiration` / `proposed_algorithm` / `failure_boundary` / `simulation_plan` / `novelty_basis`.
 
 ## Output — three artifacts, all mandatory, sequential
@@ -77,7 +77,7 @@ Follow superpowers writing-plans granularity exactly.
 - [ ] No FORBID phrases anywhere: "做一个X", "用合适的参数", "做聚类", "用合适的模型", "TBD", "TODO", "implement later", "add error handling", "handle edge cases", "use a suitable method".
 
 ## References
-- `~/.claude/skills/algorithm-design/SKILL.md` — the 6-field input this skill consumes.
+- **crossbio-algo:algorithm-design** — the 6-field input this skill consumes.
 - Kiro spec-driven development — Requirements → Design → Tasks three-phase workflow (kiro.dev/docs/specs).
 - superpowers:writing-plans — bite-sized TDD task granularity, no-placeholders rule, self-review.
 

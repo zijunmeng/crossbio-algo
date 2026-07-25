@@ -10,7 +10,7 @@ From a fuzzy interest, generate **N (default ≥3) deep, novel candidate ideas**
 
 The skill runs in **two modes**, picked once and held for the whole run:
 
-- **dev mode** — the user wants to *invent a new algorithm / method / tool*. Each idea is a **seed of algorithm invention**: it must carry `algorithm_abstraction` (mathematical essence + computational pattern + recommended domains) and a concrete `cross_domain_inspiration`. This is what lets the agent propose *unexpected* new algorithms (invent from the mathematical structure across domains), not merely recombine field methods. Seeds hand off to `~/.claude/skills/algorithm-design/SKILL.md` for full design.
+- **dev mode** — the user wants to *invent a new algorithm / method / tool*. Each idea is a **seed of algorithm invention**: it must carry `algorithm_abstraction` (mathematical essence + computational pattern + recommended domains) and a concrete `cross_domain_inspiration`. This is what lets the agent propose *unexpected* new algorithms (invent from the mathematical structure across domains), not merely recombine field methods. Seeds hand off to the **crossbio-algo:algorithm-design** skill for full design.
 - **research mode** — the user wants to *explore a biomedical / scientific direction*. Each idea carries hypothesis / gap / novelty / feasibility / data_needed in the classic research-direction style.
 
 Two disciplines hold in both modes:
@@ -21,7 +21,7 @@ Two disciplines hold in both modes:
 - User has a fuzzy interest ("胎脑 microglia 异质性", "spatial niches", "scRNA-seq imputation 想做得更有数学深度") and wants candidate ideas.
 - User wants multiple thesis / project topics to choose among.
 - Before any single idea is evaluated.
-- The output feeds `~/.claude/skills/topic-viability-assessment/SKILL.md` (research) or `~/.claude/skills/algorithm-design/SKILL.md` (dev).
+- The output feeds **crossbio-algo:topic-viability-assessment** (research) or **crossbio-algo:algorithm-design** (dev).
 
 **Not for:** evaluating ONE idea (use topic-viability-assessment); doing the full algorithm design — math derivation, failure boundary, simulation plan (use algorithm-design). Brainstorm hands off; it does not design.
 
@@ -51,7 +51,7 @@ Actively hunt: unexplored entities / regions / windows, method limitations, cont
 **Hard rule:** at least one gap must be NON-confirming (contradicts or extends the consensus). If every gap merely restates the field's open todos, redo.
 
 ### R3 — Cross-Domain
-- **research mode** — open `~/.claude/skills/algorithm-design/cross-domain-inspiration.md` (the essence→domains table). For each promising gap, mine ≥2 domains OUTSIDE the home field and name the concrete technique borrowed.
+- **research mode** — open `_shared/../algorithm-design/cross-domain-inspiration.md` (the essence→domains table). For each promising gap, mine ≥2 domains OUTSIDE the home field and name the concrete technique borrowed.
 - **dev mode** — first state each gap's **`algorithm_abstraction`** (what mathematical essence does this gap *fundamentally* reduce to?). Then open the cross-domain-inspiration table and mine ≥2 domains for that essence, naming the concrete technique borrowed. The abstraction is what unlocks non-obvious cross-domain sparks.
 
 - **AVOID THE FAMOUS-ALGORITHM TRAP (dev mode, mandatory)**: do NOT just borrow a famous named algorithm (EnKF / MVS / graph wavelet / Kalman / OT) — those are usually ALREADY applied in omics (Kalman→GRN, MVS→PASTE/MOS, SGWT→BioGSP). Before adopting a cross-domain method, **search whether it has already been applied in omics**; if yes, drop it or find an unused variant. Prefer mining the *mathematical structure* for solutions not yet ported to omics, over importing a famous algorithm's name.
@@ -68,7 +68,7 @@ Every field is mandatory. The point is to hand `algorithm-design` a rich seed, N
 |---|---|
 | `title` | concise, specific |
 | `algorithm_abstraction` | object: **mathematical_essence** (the core problem class, e.g. "高维非线性动力系统的稳态推断", "masked signal recovery on a graph"); **computational_pattern** (the solving shape, e.g. "ODE 拟合 + 稳态求解", "graph wavelet thresholding"); **recommended_domains** (≥2 fields OUTSIDE the home field to mine, from the cross-domain table) |
-| `cross_domain_inspiration` | the concrete cross-domain technique (domain + method), e.g. "ensemble Kalman filter (meteorology data assimilation) → RNA-velocity vector-field smoothing". MUST reference the 28-domain table in `~/.claude/skills/algorithm-design/cross-domain-inspiration.md` |
+| `cross_domain_inspiration` | the concrete cross-domain technique (domain + method), e.g. "ensemble Kalman filter (meteorology data assimilation) → RNA-velocity vector-field smoothing". MUST reference the 28-domain table in the algorithm-design skill's `cross-domain-inspiration.md` attachment |
 | `hypothesis` | the testable claim the algorithm would enable / embody |
 | `gap_addressed` | the R2 gap (cite it) |
 | `novelty_score` | why this is an *invention*, not incremental — the structural delta vs the nearest existing method |
@@ -104,7 +104,7 @@ Brainstorm gives **the seed of an invention**: the abstraction, the cross-domain
 - simulation plan (synthetic data + sweep regime to probe the boundary),
 - the final `proposed_algorithm` with its operator-level specification.
 
-Those are the job of `~/.claude/skills/algorithm-design/SKILL.md`, which receives the seed and invents *under the competitor constraint*. A dev-mode idea is done when a colleague could read it and say "I see the invention you're proposing and where it's new" — not when they could implement it.
+Those are the job of the **crossbio-algo:algorithm-design** skill, which receives the seed and invents *under the competitor constraint*. A dev-mode idea is done when a colleague could read it and say "I see the invention you're proposing and where it's new" — not when they could implement it.
 
 ## Checklist — mandatory discipline
 - [ ] **Mode chosen** (dev or research) and stated; held for all 5 rounds.
@@ -130,16 +130,16 @@ Those are the job of `~/.claude/skills/algorithm-design/SKILL.md`, which receive
 - Idea has no failure-aware `fatal_flaw` → incomplete critique.
 
 ## Handoff
-- **research mode** → `~/.claude/skills/topic-viability-assessment/SKILL.md`: each surviving idea is directly feedable — carry its R4 fields + R5 critique. User picks one or all; viability scores each under its target tier.
-- **dev mode** → `~/.claude/skills/topic-viability-assessment/SKILL.md` (score the seed under its tier) AND/OR directly to `~/.claude/skills/algorithm-design/SKILL.md` (deepen the seed into a full 6-field design). Carry `algorithm_abstraction` + `cross_domain_inspiration` + `novelty_score` + `existing_tools_gap` forward.
+- **research mode** → REQUIRED SUB-SKILL: **crossbio-algo:topic-viability-assessment**: each surviving idea is directly feedable — carry its R4 fields + R5 critique. User picks one or all; viability scores each under its target tier.
+- **dev mode** → **crossbio-algo:topic-viability-assessment** (score the seed under its tier) AND/OR directly to **crossbio-algo:algorithm-design** (deepen the seed into a full 6-field design). Carry `algorithm_abstraction` + `cross_domain_inspiration` + `novelty_score` + `existing_tools_gap` forward.
 
-See `~/.claude/skills/_shared/research-design-handoff.md` for the full-loop contract.
+See `_shared/research-design-handoff.md` for the full-loop contract.
 
 ## References
-- `~/.claude/skills/algorithm-design/cross-domain-inspiration.md` — the 28-domain essence→domains table + method pool (used in R3).
-- `~/.claude/skills/algorithm-design/SKILL.md` — receives a dev-mode seed and does the full inventive design.
-- `~/.claude/skills/topic-viability-assessment/SKILL.md` — scores a candidate under the user's target tier.
-- `~/.claude/skills/_shared/research-design-handoff.md` — the brainstorm→viability→design→spec contract.
+- `cross-domain-inspiration.md` (attachment of **crossbio-algo:algorithm-design**) — the 28-domain essence→domains table + method pool (used in R3).
+- **crossbio-algo:algorithm-design** — receives a dev-mode seed and does the full inventive design.
+- **crossbio-algo:topic-viability-assessment** — scores a candidate under the user's target tier.
+- `_shared/research-design-handoff.md` — the brainstorm→viability→design→spec contract.
 
 ## Example — dev mode: "scRNA-seq imputation, want a more mathematically deep approach"
 ```

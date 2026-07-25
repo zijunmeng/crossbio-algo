@@ -125,7 +125,7 @@ These thresholds are strictest for T1. **For T2, a crowded keyword-space alone d
 ## Handoff to Algorithm Design
 You are a **counsel, not a gatekeeper** — you do NOT veto. Once the target tier is set and viability is scored under it (with the competitor table attached):
 1. If viable under the tier → hand off directly.
-2. If low under the tier but the user wants to proceed → that is the user's call; just make it informed (see `~/.claude/skills/_shared/research-design-handoff.md`). Options (informed door): (a) accept the tier's risk, (b) lock an improvable axis that survived the delta analysis (T2), or (c) supply info that changes the score (e.g. a reclassified slot).
+2. If low under the tier but the user wants to proceed → that is the user's call; just make it informed (see `_shared/research-design-handoff.md`). Options (informed door): (a) accept the tier's risk, (b) lock an improvable axis that survived the delta analysis (T2), or (c) supply info that changes the score (e.g. a reclassified slot).
 3. Emit the handoff block (target_tier, verdict, score, the competitor_comparison_table, the genuine direct_competitors + their improvable axes, user's choice) so algorithm-design inherits the real competitive landscape — not a name list.
 
 The user decides; your job is to ensure they decide **informed under the right ruler and against the real (slot-filtered) competitor set**, then carry the truth forward.
@@ -150,4 +150,4 @@ biggest_failure_risk: a future ATAC-free method lands before submission and occu
 ```
 
 ## References
-- `~/.claude/skills/_shared/research-design-handoff.md` — the viability→design contract; carry the competitor_comparison_table forward so design's `novelty_basis` is checked against genuine direct competitors.
+- `_shared/research-design-handoff.md` — the viability→design contract; carry the competitor_comparison_table forward so **crossbio-algo:algorithm-design**'s `novelty_basis` is checked against genuine direct competitors.

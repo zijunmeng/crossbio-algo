@@ -10,7 +10,7 @@ Designing a new algorithm means **inventing**, not recombining. Most "design a n
 
 Two disciplines make it work:
 - **Externalized reasoning (推理外显)**: the agent decides the professional calls itself, but explains *why* at every step. The user corrects or overrides whenever they want — they are never *required* to make a professional either/or they can't judge.
-- **Honor the handoff**: if this follows a `topic-viability-assessment` run, read `~/.claude/skills/_shared/research-design-handoff.md` and design **under the competitor constraint** it carries.
+- **Honor the handoff**: if this follows a **crossbio-algo:topic-viability-assessment** run, read `_shared/research-design-handoff.md` and design **under the competitor constraint** it carries.
 
 ## When to Use
 - Someone wants to design a new algorithm / method / model (not just run or compare existing ones)
@@ -88,7 +88,7 @@ Commit: "Building synthetic data with controllable [params] to probe that bounda
 
 ## References
 - `cross-domain-inspiration.md` (in this folder) — the 28-domain essence→domains map + method pool.
-- `~/.claude/skills/_shared/research-design-handoff.md` — the viability→design contract (read if chained from topic-viability).
+- `_shared/research-design-handoff.md` — the viability→design contract (read if chained from **crossbio-algo:topic-viability-assessment**).
 
 ## Example — scRNA-seq imputation
 ```
