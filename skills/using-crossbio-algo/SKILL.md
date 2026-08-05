@@ -15,11 +15,11 @@ research-intake  (user has data + research question)
       ✋ fatal issue → STOP until resolved or user accepts risk
   → brainstorm  (N candidate ideas; dev-mode invents algorithms from math essence + cross-domain)
   → topic-viability  (competitor DEEP-COMPARISON table → tier-aware score)
-      ★ cross-model-audit  (before trusting the verdict)
+      ★ adversarial-panel-audit  (before trusting the verdict)
   → algorithm-design  (4-step inventive; autonomous + externalized reasoning)
-      ★ cross-model-audit
+      ★ adversarial-panel-audit
   → spec-writing  (kiro requirements/design/tasks; acceptance ← failure_boundary)
-      ★ cross-model-audit
+      ★ adversarial-panel-audit
   → code
 ```
 
@@ -31,14 +31,14 @@ research-intake  (user has data + research question)
 | "Is this idea worth doing? / value it? / competitors?" | **topic-viability-assessment** (MUST build deep-comparison table first; ask target tier) |
 | "Design an algorithm / method for X" | **algorithm-design** (autonomous 4-step; externalize reasoning) |
 | "Write spec / PRD / implementation plan / requirements" | **spec-writing** (kiro 3 artifacts) |
-| Any artifact about to be trusted, or "审一下 / review / 靠谱吗" | **cross-model-audit** (subagent panel) |
+| Any artifact about to be trusted, or "审一下 / review / 靠谱吗" | **adversarial-panel-audit** (subagent panel) |
 
 ## Priority / order
 - **data-and-estimand-audit BEFORE brainstorm** (数据/estimand 审计先于算法发明；fatal_issues 未解决则不进 brainstorm).
 - **brainstorm BEFORE viability** (generate candidates, then score).
 - **viability BEFORE design** (vet before investing design effort).
 - **design BEFORE spec** (invent before engineering).
-- **cross-model-audit is horizontal** — fires before ANY artifact is trusted (viability verdict / design / spec / result).
+- **adversarial-panel-audit is horizontal** — fires before ANY artifact is trusted (viability verdict / design / spec / result).
 - If an idea is rejected → **fallback** to remaining brainstorm candidates (see `_shared/research-design-handoff.md`); never discard, never jump to "switch direction" without offering the remaining candidates + a "generate more?" prompt.
 
 ## Two disciplines that hold the loop together
@@ -50,4 +50,4 @@ Each skill auto-triggers from its own `description`. To force a stage, use the S
 
 ## References
 - `_shared/research-design-handoff.md` — the full loop contract + handoff blocks + fallback mechanism.
-- Individual skill SKILL.md files for stage-specific rules (invoked as **crossbio-algo:brainstorm**, **crossbio-algo:topic-viability-assessment**, **crossbio-algo:algorithm-design**, **crossbio-algo:spec-writing**, **crossbio-algo:cross-model-audit**).
+- Individual skill SKILL.md files for stage-specific rules (invoked as **crossbio-algo:brainstorm**, **crossbio-algo:topic-viability-assessment**, **crossbio-algo:algorithm-design**, **crossbio-algo:spec-writing**, **crossbio-algo:adversarial-panel-audit**).

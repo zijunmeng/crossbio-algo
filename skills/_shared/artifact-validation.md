@@ -63,7 +63,7 @@ def validate_chain(artifacts):  # artifacts: dict stage->artifact.json
 - **handoff contract** (`research-design-handoff.md`): each stage MUST emit `artifact.json` (not just `.md`); downstream stage MUST validate cross-stage rules before proceeding.
 - **algorithm-design**: design `artifact.json` carries `estimand + failure_boundaries + notation_and_shapes` (machine-checkable, not just prose).
 - **spec-writing**: spec `artifact.json`'s `acceptance_criteria` MUST `traces_to` design's `failure_boundaries` (validated by rule 2, not just claimed).
-- **cross-model-audit**: audit can check `artifact.json` chain consistency — drift is now an auditable finding.
+- **adversarial-panel-audit**: audit can check `artifact.json` chain consistency — drift is now an auditable finding.
 - **data-and-estimand-audit**: the chain's root artifact (estimand + fatal_issues propagate forward; everything traces back to it).
 
 ## What this prevents (the failure modes it catches)

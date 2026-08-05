@@ -16,11 +16,11 @@ Generic coding agents (Claude Code / Codex) can run analyses and write code, but
 ```
 brainstorm  (N candidate ideas; dev-mode: algorithm-abstraction + cross-domain invention)
   → topic-viability  (competitor DEEP-COMPARISON table; tier-aware T1–T4 score)
-      ★ cross-model-audit  (subagent panel, info-isolated, forced-adversarial)
+      ★ adversarial-panel-audit  (subagent panel, info-isolated, role-based)
   → algorithm-design  (4-step inventive; autonomous run + externalized reasoning)
-      ★ cross-model-audit
+      ★ adversarial-panel-audit
   → spec-writing  (kiro: requirements / design / tasks; acceptance traces to failure_boundary)
-      ★ cross-model-audit
+      ★ adversarial-panel-audit
   → code
 ```
 **Fallback mechanism**: an idea rejected at any stage falls back to the remaining candidates — never discarded.
@@ -44,7 +44,7 @@ Or install as a Claude Code plugin via the marketplace (plugin.json provided).
 | `topic-viability-assessment` | competitor deep-comparison table (input/method/output/limitation/delta); tier-aware score; FORBID judging crowdedness from names |
 | `algorithm-design` | 4-step inventive design; autonomous + externalized reasoning; pause only at global forks |
 | `spec-writing` | kiro requirements → design → tasks; bite-sized TDD; acceptance ← failure_boundary; Publication Roadmap |
-| `cross-model-audit` | subagent panel (info-isolated, role-based, forced-adversarial); pass/needs_revision/fail |
+| `adversarial-panel-audit` | adversarial panel of same-model subagents (info-isolated, role-based, no forced critique); pass/needs_revision/fail |
 | `_shared/research-design-handoff` | the loop contract + fallback mechanism |
 
 ## Demo

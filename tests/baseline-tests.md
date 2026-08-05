@@ -30,10 +30,10 @@
 - **RED expected**: high-level verbs ("do clustering"); acceptance not traced to failure_boundary; no tasks file.
 - **GREEN**: kiro 3 artifacts (requirements/design/tasks); API-call-level pseudocode; acceptance ← failure_boundary; bite-sized TDD tasks with real code.
 
-### cross-model-audit
+### adversarial-panel-audit
 - **scenario**: audit a produced artifact.
 - **RED expected**: returns "looks good"; no information isolation; no structured verdict.
-- **GREEN**: panel of subagents, info-isolated, forced-adversarial (each finds ≥1 problem); structured pass/needs_revision/fail verdict.
+- **GREEN**: panel of same-model subagents, info-isolated, each completes its role checklist (does NOT force ≥1 finding — critique inflation forbidden; may conclude "no material issue — checklist completed"); structured findings (claim/evidence/severity/confidence/reproduction_check/blocking/fix); optional defender/replicator seat; structured pass/needs_revision/fail verdict.
 
 ### using-crossbio-algo (bootstrap)
 - **scenario**: user proposes a research task.
@@ -56,14 +56,14 @@ Agent(prompt="<scenario> + <paste skill SKILL.md content>", subagent_type="gener
 | brainstorm | 凭记忆不查证；无 dev-mode abstraction；无 self-critique | 查证 + algorithm_abstraction + self-critique |
 | algorithm-design | 套现成方法不抽象；全 scRNA 无跨域；无严格失效边界；无 simulation-first/推理外显 | 抽象→跨域→失效边界→simulation + 推理外显 |
 | spec-writing | 无 kiro 三段式分离；无 Publication Roadmap；测试非 bite-sized TDD（但验收 trace 做得好） | kiro 三段式 + Roadmap + bite-sized TDD |
-| cross-model-audit | 单审计非 panel；无信息隔离；无结构化裁决（但找了 4 个硬伤） | panel + 信息隔离 + 强制对抗 + 结构化裁决 |
+| adversarial-panel-audit | 单审计非 panel；无信息隔离；无结构化裁决（但找了 4 个硬伤） | panel + 信息隔离 + 完成角色 checklist（不强制找问题）+ 结构化 finding + 结构化裁决 |
 | using-crossbio-algo | 不识别闭环；不触发 skill 序列（直接单步答） | bootstrap 闭环 + 按序触发 |
 | topic-viability | 不结构化（无对比表/tier/插槽；虽 depth 但定性叙述） | 深度对比表 + tier + 插槽判断 |
 
 **结论**：区分"实测"与"推断"——
 - **RED 实测**：全部 5 skill + topic-viability 的裸行为已记录（见上表"RED 实测"列）。
 - **GREEN 实测**：仅 **topic-viability** 有正式的 RED+GREEN 对照实测。
-- **GREEN 推断**（非实测）：其余 5 skill（brainstorm / algorithm-design / spec-writing / cross-model-audit / using-crossbio-algo）的 GREEN 行为是基于之前真实运行（SCOUT / spaGRN / spatialEnKF 等带 skill 的实际项目）的**推断**，**未做正式的 skill-enabled vs skill-disabled 对照 eval suite**。该对照 eval 计划在 v0.2 迁移到 skill-creator eval 框架后补齐。
+- **GREEN 推断**（非实测）：其余 5 skill（brainstorm / algorithm-design / spec-writing / adversarial-panel-audit / using-crossbio-algo）的 GREEN 行为是基于之前真实运行（SCOUT / spaGRN / spatialEnKF 等带 skill 的实际项目）的**推断**，**未做正式的 skill-enabled vs skill-disabled 对照 eval suite**。该对照 eval 计划在 v0.2 迁移到 skill-creator eval 框架后补齐。
 
 RED 揭示裸 Claude 虽强但缺结构化纪律——skill 的价值 = 把"偶发的好行为"变成"每次必走的结构化流程"。
 

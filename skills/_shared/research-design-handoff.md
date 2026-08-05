@@ -1,6 +1,6 @@
 ---
 name: research-design-handoff
-description: Shared contract chaining the research skills across the FULL loop — brainstorm → topic-viability → algorithm-design → spec-writing, with cross-model-audit as a horizontal QA layer at each handoff. Read when transitioning between stages.
+description: Shared contract chaining the research skills across the FULL loop — brainstorm → topic-viability → algorithm-design → spec-writing, with adversarial-panel-audit as a horizontal QA layer at each handoff. Read when transitioning between stages.
 ---
 
 # Research → Design → Spec Handoff Contract (full loop)
@@ -8,7 +8,7 @@ description: Shared contract chaining the research skills across the FULL loop �
 ## Purpose
 Keep the skill chain honest across the FULL loop, not just viability→design. Two failure modes this prevents:
 1. A stage ignores upstream truth (design ignores viability's competitors; spec ignores design's failure_boundary).
-2. cross-model-audit never fires → no adversarial check → silent slop gets trusted.
+2. adversarial-panel-audit never fires → no adversarial check → silent slop gets trusted.
 
 ## The Full Loop
 ```
@@ -17,15 +17,15 @@ research-intake  (user has data + research question)
       ✋ fatal_issues non-empty → STOP until resolved or user accepts risk
   → brainstorm  (N candidate ideas)
   → topic-viability  (score each under target tier; pick)
-      ★ cross-model-audit  (adversarial review of the assessment)
+      ★ adversarial-panel-audit  (adversarial review of the assessment)
   → algorithm-design  (6-field design, under competitor constraint)
-      ★ cross-model-audit  (adversarial review of the design)
+      ★ adversarial-panel-audit  (adversarial review of the design)
   → spec-writing  (executable engineering spec from the 6 fields)
-      ★ cross-model-audit  (adversarial review of the spec)
+      ★ adversarial-panel-audit  (adversarial review of the spec)
   → code / execution
-      ★ cross-model-audit  (adversarial review of results)
+      ★ adversarial-panel-audit  (adversarial review of results)
 ```
-cross-model-audit is **horizontal** — it fires at EACH ★ before the artifact is trusted.
+adversarial-panel-audit is **horizontal** — it fires at EACH ★ before the artifact is trusted.
 data-and-estimand-audit is a **GATE** — it runs once, before brainstorm, and blocks the loop on fatal issues.
 
 ## The "Honest Colleague" Principle (unchanged)
@@ -65,7 +65,7 @@ SPEC_HANDOFF:
 - **topic-viability**: score under target_tier; if low + user insists → informed choice (accept tier risk / lock improvable axis / supply info); emit VIABILITY_HANDOFF.
 - **algorithm-design**: receive VIABILITY_HANDOFF; `novelty_basis` MUST address delta vs each top_competitor (tier-dependent); autonomous run with externalized reasoning, pause only at global forks; emit 6 fields.
 - **spec-writing**: receive DESIGN_HANDOFF; spec MUST be executable-level (no vague verbs like "do clustering"); acceptance criteria MUST map to `failure_boundary`; emit SPEC_HANDOFF.
-- **cross-model-audit**: at each ★, spawn a subagent panel (info-isolated, role-based, forced-adversarial); emit `pass / needs_revision(exact fields) / fail`. Honest about same-model blind spot.
+- **adversarial-panel-audit**: at each ★, spawn a same-model subagent panel (info-isolated, role-based; complete each role's checklist, do NOT force ≥1 finding — critique inflation forbidden; optional defender/replicator seat filters false positives); every finding structured (claim/evidence/severity/confidence/reproduction_check/blocking/suggested_fix); emit `pass / needs_revision(exact fields) / fail`. Honest about same-model blind spot + hybrid (external-model) upgrade path.
 
 ## Fallback Mechanism — NEVER discard upstream candidates when one idea fails
 When an idea/artifact is rejected at viability / audit / design:
@@ -102,7 +102,7 @@ Before a stage trusts its input, it runs the 5 cross-stage consistency checks de
 4. **pseudocode → code** — each spec pseudocode hash has matching implemented code (or documented `code.divergence` with justification).
 5. **provenance_hash integrity** — `provenance_hash == sha256(canonical_json(content))[:12]`.
 
-**Validation failure = drift = STOP.** Do not proceed to the next stage until the drift is reconciled (fix the downstream artifact, or document an explicit, justified divergence). This is a hard gate, on top of the existing cross-model-audit adversarial gate.
+**Validation failure = drift = STOP.** Do not proceed to the next stage until the drift is reconciled (fix the downstream artifact, or document an explicit, justified divergence). This is a hard gate, on top of the existing adversarial-panel-audit adversarial gate.
 
 **References**: schema — `_shared/artifact-schema.json`; rules + validation pseudocode — `_shared/artifact-validation.md`.
 

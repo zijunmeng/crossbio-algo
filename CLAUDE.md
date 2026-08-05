@@ -8,7 +8,7 @@ Follow the **crossbio-algo** loop. Read the **crossbio-algo:using-crossbio-algo*
 
 1. **brainstorm** — if multiple ideas are wanted (dev-mode invents algorithms from mathematical essence + cross-domain, doesn't recombine)
 2. **topic-viability-assessment** — score ONE idea: build the competitor DEEP-COMPARISON table first (never judge crowdedness from names); tier-aware (ask T1–T4 first)
-3. **cross-model-audit** — adversarial subagent panel BEFORE trusting any artifact
+3. **adversarial-panel-audit** — adversarial same-model subagent panel BEFORE trusting any artifact
 4. **algorithm-design** — 4-step inventive design; autonomous + externalized reasoning; pause only at global forks
 5. **spec-writing** — kiro requirements / design / tasks; acceptance traces to failure_boundary
 6. code

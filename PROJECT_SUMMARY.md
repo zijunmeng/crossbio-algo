@@ -21,7 +21,7 @@ crossbio-algo 把这些固化成一个 **skill 闭环**，让 Claude 在科研�
 
 ## 起源
 
-从 **auto-sc**（自主单细胞研究 agent，`/s1/SHARE/mengzijun/01_project/27_bioinfo_auto_research`）提炼——把 auto-sc 最有价值的部分（科研诚实纪律 + 跨域算法发明 + 跨模型对抗审计）从独立 Python 项目提炼成 Claude Code skill 闭环。
+从 **auto-sc**（自主单细胞研究 agent，`/s1/SHARE/mengzijun/01_project/27_bioinfo_auto_research`）提炼——把 auto-sc 最有价值的部分（科研诚实纪律 + 跨域算法发明 + 同模型对抗 panel 审计）从独立 Python 项目提炼成 Claude Code skill 闭环。
 
 ---
 
@@ -34,7 +34,7 @@ crossbio-algo 把这些固化成一个 **skill 闭环**，让 Claude 在科研�
 | **topic-viability-assessment** | 课题评估 | **竞品深度对比表**（逐个查原文：输入/方法/输出/局限/delta/是否直接竞品）；**目标分层 T1-T4**（评分按目标，不单维唱衰）；按**方法学插槽**判直接竞品（不同插槽≠竞品）；禁"看名字判拥挤" |
 | **algorithm-design** | 算法设计 | 4 步（数学抽象→跨域灵感→失效边界→simulation-first）；**自主跑 + 推理外显**（不每步问用户，只在全局分叉停）；28 域灵感池；novelty_basis 按目标 tier |
 | **spec-writing** | spec 生成 | **kiro 三段式**（requirements.md / design.md / tasks.md）；验收 EARS 记法 + **trace 到 failure_boundary**；tasks 是 bite-sized TDD（真实代码，no placeholder）；**Publication Roadmap**（MVP scope + 工程/实验/写作 gap + 工作量+优先级） |
-| **cross-model-audit** | 对抗审计 | **subagent panel**（信息隔离 + 多角色 + 强制对抗，每个找 ≥1 问题）；结构化裁决（pass/needs_revision/fail）；横切各产出（viability/design/spec/result）；诚实声明同模型盲点 + hybrid 升级路径 |
+| **adversarial-panel-audit** | 对抗审计 | **same-model subagent panel**（信息隔离 + 多角色 + 完成各角色 checklist，不强制找 ≥1 问题，避免 critique inflation）；可选 defender/replicator 席位过滤假阳性；每个 finding 结构化（claim/evidence/severity/confidence/reproduction_check/blocking/fix）；agents/*.md 6 角色；结构化裁决（pass/needs_revision/fail）；横切各产出（viability/design/spec/result）；诚实声明同模型盲点 + hybrid 升级路径（混入真外部模型才成为真 cross-model） |
 | `_shared/research-design-handoff` | 联动契约 | 完整闭环 + handoff block（各阶段产物传递）+ **fallback 回退机制**（idea 失败→回退剩余候选，不丢弃） |
 | `algorithm-design/cross-domain-inspiration` | 28 域灵感池 | 数学本质→科学领域映射表（流体力学/信息论/博弈论/卫星遥感/金融量化/运筹学/宇宙学…）+ 方法池；auto-sc dev-mode 提炼 |
 
@@ -45,11 +45,11 @@ crossbio-algo 把这些固化成一个 **skill 闭环**，让 Claude 在科研�
 ```
 brainstorm  (N candidate ideas; dev-mode 从数学本质跨域发明)
   → topic-viability  (竞品深度对比表 → tier 评分; 禁看名字判拥挤)
-      ★ cross-model-audit  (对抗 panel, 信任前必审)
+      ★ adversarial-panel-audit  (对抗 panel, 信任前必审)
   → algorithm-design  (4 步发明; 自主跑 + 推理外显)
-      ★ cross-model-audit
+      ★ adversarial-panel-audit
   → spec-writing  (kiro requirements/design/tasks; 验收 ← failure_boundary)
-      ★ cross-model-audit
+      ★ adversarial-panel-audit
   → code
 ```
 **Fallback**：任一阶段否决一个 idea → 回退到 brainstorm 剩余候选（强制提示"或 dev-mode 再生成"），**永不丢弃已生成候选**。
@@ -122,7 +122,7 @@ crossbio-algo/
 │   ├── topic-viability-assessment/SKILL.md
 │   ├── algorithm-design/{SKILL.md, cross-domain-inspiration.md}
 │   ├── spec-writing/SKILL.md
-│   ├── cross-model-audit/SKILL.md
+│   ├── adversarial-panel-audit/{SKILL.md, agents/*.md (6 角色)}
 │   └── _shared/research-design-handoff.md
 ├── examples/scout/                    # SCOUT 全链 demo
 │   ├── {requirements,design,tasks}.md
@@ -134,4 +134,4 @@ crossbio-algo/
 
 ## 一句话给专家
 
-> crossbio-algo 把"自主科研 agent"最有价值的部分（科研诚实纪律 + 跨域算法发明 + 跨模型对抗审计）提炼成一个 7-skill Claude Code 闭环——从模糊研究兴趣到可执行算法 spec，带竞品查证/双向审计/失效边界/kiro 三段式。已用 SCOUNT demo + 6 skill baseline 测试验证。工程规范化（namespace/bootstrap/测试/去个人化），待 GitHub 发布。
+> crossbio-algo 把"自主科研 agent"最有价值的部分（科研诚实纪律 + 跨域算法发明 + 同模型对抗 panel 审计，诚实非跨模型）提炼成一个 7-skill Claude Code 闭环——从模糊研究兴趣到可执行算法 spec，带竞品查证/双向审计/失效边界/kiro 三段式。已用 SCOUNT demo + 6 skill baseline 测试验证。工程规范化（namespace/bootstrap/测试/去个人化），待 GitHub 发布。
