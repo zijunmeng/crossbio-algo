@@ -39,6 +39,7 @@ Or install as a Claude Code plugin via the marketplace (plugin.json provided).
 | skill | role |
 |---|---|
 | `using-crossbio-algo` | **bootstrap**: the loop, when to trigger each, priority order |
+| `data-and-estimand-audit` | GATE: 审计数据+estimand（donor 泄漏/批次/样本单位/ground truth）在算法发明前 |
 | `brainstorm` | 5-round ideation; dev-mode = algorithm-abstraction + cross-domain (invents, doesn't recombine) |
 | `topic-viability-assessment` | competitor deep-comparison table (input/method/output/limitation/delta); tier-aware score; FORBID judging crowdedness from names |
 | `algorithm-design` | 4-step inventive design; autonomous + externalized reasoning; pause only at global forks |

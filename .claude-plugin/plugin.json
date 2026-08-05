@@ -8,5 +8,5 @@
   "license": "MIT",
   "homepage": "https://github.com/crossbio-algo/crossbio-algo",
   "keywords": ["bioinformatics", "computational-biology", "algorithm-design", "research", "single-cell", "spatial-omics"],
-  "skills": ["skills/using-crossbio-algo", "skills/brainstorm", "skills/topic-viability-assessment", "skills/algorithm-design", "skills/spec-writing", "skills/cross-model-audit"]
+  "skills": ["skills/using-crossbio-algo", "skills/data-and-estimand-audit", "skills/brainstorm", "skills/topic-viability-assessment", "skills/algorithm-design", "skills/spec-writing", "skills/cross-model-audit"]
 }

@@ -12,7 +12,10 @@ Keep the skill chain honest across the FULL loop, not just viability→design. T
 
 ## The Full Loop
 ```
-brainstorm  (N candidate ideas)
+research-intake  (user has data + research question)
+  → data-and-estimand-audit  (GATE before brainstorm: audit data+estimand)
+      ✋ fatal_issues non-empty → STOP until resolved or user accepts risk
+  → brainstorm  (N candidate ideas)
   → topic-viability  (score each under target tier; pick)
       ★ cross-model-audit  (adversarial review of the assessment)
   → algorithm-design  (6-field design, under competitor constraint)
@@ -23,6 +26,7 @@ brainstorm  (N candidate ideas)
       ★ cross-model-audit  (adversarial review of results)
 ```
 cross-model-audit is **horizontal** — it fires at EACH ★ before the artifact is trusted.
+data-and-estimand-audit is a **GATE** — it runs once, before brainstorm, and blocks the loop on fatal issues.
 
 ## The "Honest Colleague" Principle (unchanged)
 - No skill vetoes the user. They are counsel, not gatekeeper.
@@ -56,6 +60,7 @@ SPEC_HANDOFF:
 ```
 
 ## Stage obligations
+- **data-and-estimand-audit**: 审计数据+estimand（biological_unit / leakage / ground_truth / fatal_issues）；产出 data audit artifact；**brainstorm/algorithm-design 必须在 fatal_issues 为空（或用户显式接受风险）后才能开始**。
 - **brainstorm**: emit ≥3 candidates with ≥1 non-confirming gap; verify trends (no memory); hand off the set.
 - **topic-viability**: score under target_tier; if low + user insists → informed choice (accept tier risk / lock improvable axis / supply info); emit VIABILITY_HANDOFF.
 - **algorithm-design**: receive VIABILITY_HANDOFF; `novelty_basis` MUST address delta vs each top_competitor (tier-dependent); autonomous run with externalized reasoning, pause only at global forks; emit 6 fields.

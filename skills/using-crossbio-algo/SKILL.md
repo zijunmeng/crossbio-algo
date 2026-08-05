@@ -10,7 +10,10 @@ This is the **bootstrap** for the crossbio-algo skill loop — a coordinated cha
 
 ## The Loop
 ```
-brainstorm  (N candidate ideas; dev-mode invents algorithms from math essence + cross-domain)
+research-intake  (user has data + research question)
+  → data-and-estimand-audit  (GATE: audit donor leakage / batch / sample unit / ground truth before any invention)
+      ✋ fatal issue → STOP until resolved or user accepts risk
+  → brainstorm  (N candidate ideas; dev-mode invents algorithms from math essence + cross-domain)
   → topic-viability  (competitor DEEP-COMPARISON table → tier-aware score)
       ★ cross-model-audit  (before trusting the verdict)
   → algorithm-design  (4-step inventive; autonomous + externalized reasoning)
@@ -23,6 +26,7 @@ brainstorm  (N candidate ideas; dev-mode invents algorithms from math essence + 
 ## When to trigger each skill
 | Signal from the user | Skill |
 |---|---|
+| 用户有数据 + 研究问题，在 brainstorm/design 前 | **data-and-estimand-audit** (GATE — 审计 donor 泄漏/批次/样本单位/ground truth；fatal issue 则停) |
 | "I want to explore a direction / find topics / get multiple ideas" | **brainstorm** (dev-mode if algorithm/tool; research-mode if biomedical direction) |
 | "Is this idea worth doing? / value it? / competitors?" | **topic-viability-assessment** (MUST build deep-comparison table first; ask target tier) |
 | "Design an algorithm / method for X" | **algorithm-design** (autonomous 4-step; externalize reasoning) |
@@ -30,6 +34,7 @@ brainstorm  (N candidate ideas; dev-mode invents algorithms from math essence + 
 | Any artifact about to be trusted, or "审一下 / review / 靠谱吗" | **cross-model-audit** (subagent panel) |
 
 ## Priority / order
+- **data-and-estimand-audit BEFORE brainstorm** (数据/estimand 审计先于算法发明；fatal_issues 未解决则不进 brainstorm).
 - **brainstorm BEFORE viability** (generate candidates, then score).
 - **viability BEFORE design** (vet before investing design effort).
 - **design BEFORE spec** (invent before engineering).
