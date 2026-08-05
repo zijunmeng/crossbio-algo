@@ -75,5 +75,36 @@ When an idea/artifact is rejected at viability / audit / design:
 - FORBID: jumping to "switch direction / regenerate" and dropping already-generated candidates just because the *picked* one failed.
 - (This is the creative-layer analogue of auto-sc's broker `rollback` — extends it from execution to ideation.)
 
+## Machine-Checkable Artifacts (artifact.json)
+
+Markdown-only handoffs **drift**. Real example: SCOUT's design.md said `TruncatedSVD` (a dimension-mismatch bug), but `scout.py` silently switched to `np.linalg.svd` — the spec never constrained the code, and nobody caught it until expert review. To make that drift machine-detectable, **every stage emits TWO artifacts**:
+
+- **`artifact.md`** — the human-readable output this contract already describes (the 16-field design, the kiro three-phase spec, the data-audit table, etc.).
+- **`artifact.json`** — a machine-checkable companion whose schema is `_shared/artifact-schema.json` and whose `stage_fields` are the stage's structured payload (see `artifact-validation.md` for the per-stage field table).
+
+### Artifact chain (root → leaf)
+```
+data-audit  (ROOT)  stage_fields: biological_unit / estimand / fatal_issues / cohort_structure / leakage_graph / split_strategy
+   ↓ estimand propagates to ALL downstream stages
+design             stage_fields: problem_definition / estimand / notation_and_shapes / objective_or_likelihood / identifiability / failure_boundaries / complexity
+   ↓ failure_boundaries + notation_and_shapes propagate to spec
+spec              stage_fields: module_interfaces / acceptance_criteria (each traces_to a failure_boundary) / pseudocode_hashes
+   ↓
+code              stage_fields: module_hashes / test_results / acceptance_status
+```
+Each artifact carries `parent_artifact_id` forming the chain, and a `provenance_hash` (= `sha256(canonical_json(content))[:12]`) so tampering/silent edits are detectable.
+
+### Downstream stage MUST validate before continuing
+Before a stage trusts its input, it runs the 5 cross-stage consistency checks defined in `_shared/artifact-validation.md`:
+1. **estimand continuity** — `design.estimand == data-audit.estimand` (silent change = invalid; requires explicit `estimand_change_justification`).
+2. **failure_boundary → acceptance, no orphans** — every `design.failure_boundaries` item has ≥1 matching `spec.acceptance_criteria` whose `traces_to` names it.
+3. **notation consistency** — `spec.module_interfaces` shapes/names == `design.notation_and_shapes` (the SCOUT TruncatedSVD-vs-np.linalg.svd drift is caught here).
+4. **pseudocode → code** — each spec pseudocode hash has matching implemented code (or documented `code.divergence` with justification).
+5. **provenance_hash integrity** — `provenance_hash == sha256(canonical_json(content))[:12]`.
+
+**Validation failure = drift = STOP.** Do not proceed to the next stage until the drift is reconciled (fix the downstream artifact, or document an explicit, justified divergence). This is a hard gate, on top of the existing cross-model-audit adversarial gate.
+
+**References**: schema — `_shared/artifact-schema.json`; rules + validation pseudocode — `_shared/artifact-validation.md`.
+
 ## One-line summary
-> brainstorm generates, viability scores under the user's ruler, design invents under competitor constraint, spec makes it buildable, and audit adversarially checks each — truth carries forward, never restarted, never trusted unchecked.
+> brainstorm generates, viability scores under the user's ruler, design invents under competitor constraint, spec makes it buildable, and audit adversarially checks each — truth carries forward, never restarted, never trusted unchecked, and now machine-checked via the artifact.json chain at every handoff.

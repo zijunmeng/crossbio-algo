@@ -133,9 +133,17 @@ None of the **required** fields are optional; the **encouraged** fields are fill
 - Professional calls made with no recommendation / no stated reason → black-boxed; re-run with 推理外显 (state choice + why at each step).
 - User was forced into a binary on a technical judgment outside their scope → mis-scoped collaboration; the agent should have recommended.
 
+## Artifact output
+In addition to the 16-field contract above (human-readable), this stage emits **`artifact.json`** (schema: `_shared/artifact-schema.json`): `stage_fields = {problem_definition, estimand, notation_and_shapes, objective_or_likelihood, identifiability, failure_boundaries, complexity}`.
+Three fields propagate downstream and are cross-stage-validated (`_shared/artifact-validation.md`):
+- **`estimand` MUST == `data-audit.artifact.estimand`** (rule 1) — drift requires an explicit `estimand_change_justification`; silent change = invalid.
+- **`failure_boundaries`** propagate to spec — every boundary item MUST have a matching `spec.acceptance_criteria` with `traces_to` naming it (rule 2, no orphans).
+- **`notation_and_shapes`** propagate to spec — `spec.module_interfaces` shapes/names MUST match (rule 3; this is the rule that would have caught SCOUT's TruncatedSVD-vs-np.linalg.svd drift).
+
 ## References
 - `cross-domain-inspiration.md` (in this folder) — the 28-domain essence→domains map + method pool.
 - `_shared/research-design-handoff.md` — the viability→design contract (read if chained from **crossbio-algo:topic-viability-assessment**).
+- `_shared/artifact-schema.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits.
 
 ## Example — scRNA-seq imputation (16-field contract)
 

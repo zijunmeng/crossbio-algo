@@ -76,10 +76,18 @@ Follow superpowers writing-plans granularity exactly.
 - [ ] `tasks.md`: bite-sized 5-step TDD tasks; every step has **real code** (no placeholders); every `simulation_plan` case is a test; Self-review done.
 - [ ] No FORBID phrases anywhere: "做一个X", "用合适的参数", "做聚类", "用合适的模型", "TBD", "TODO", "implement later", "add error handling", "handle edge cases", "use a suitable method".
 
+## Artifact output
+In addition to the three kiro artifacts above (human-readable), this stage emits **`artifact.json`** (schema: `_shared/artifact-schema.json`): `stage_fields = {module_interfaces, acceptance_criteria (each traces_to a design failure_boundary), pseudocode_hashes}`.
+Three cross-stage rules apply (`_shared/artifact-validation.md`):
+- **rule 2 (no orphans)** — every `design.failure_boundaries` item MUST have ≥1 matching `acceptance_criteria` whose `traces_to` names it (machine-checked, not just the trace table above).
+- **rule 3 (notation consistency)** — `module_interfaces` shapes/names MUST == `design.notation_and_shapes` (catches design→spec divergence).
+- **rule 4 (pseudocode → code)** — each pseudocode block has a content hash in `pseudocode_hashes`; the implemented code MUST match, or any divergence is recorded with justification.
+
 ## References
 - **crossbio-algo:algorithm-design** — the 6-field input this skill consumes.
 - Kiro spec-driven development — Requirements → Design → Tasks three-phase workflow (kiro.dev/docs/specs).
 - superpowers:writing-plans — bite-sized TDD task granularity, no-placeholders rule, self-review.
+- `_shared/artifact-schema.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits.
 
 ## Example — three-artifact excerpt (graph-wavelet imputation)
 

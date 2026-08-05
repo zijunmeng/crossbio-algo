@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "crossbio-algo artifact",
+  "description": "Machine-checkable artifact for each stage of the research loop. Prevents design-spec-code drift (e.g., SCOUT design said TruncatedSVD, code used np.linalg.svd — that drift is now detectable). Every stage emits artifact.md (human) + artifact.json (this schema, machine).",
+  "type": "object",
+  "required": ["artifact_id", "stage", "parent_artifact_id", "skill_version", "provenance_hash"],
+  "properties": {
+    "artifact_id": {
+      "type": "string",
+      "description": "unique id, e.g. 'design-scout-001'"
+    },
+    "parent_artifact_id": {
+      "type": ["string", "null"],
+      "description": "upstream artifact this derives from — forms a chain (data-audit → design → spec → code)"
+    },
+    "stage": {
+      "enum": ["data-audit", "brainstorm", "viability", "design", "spec", "code", "audit"]
+    },
+    "skill_version": {"type": "string"},
+    "model": {"type": "string"},
+    "created_at": {"type": "string"},
+    "provenance_hash": {
+      "type": "string",
+      "description": "sha256(content)[:12] — detects tampering or silent drift"
+    },
+    "inputs": {
+      "type": "object",
+      "description": "upstream artifact_ids + data that fed this stage"
+    },
+    "decision": {
+      "type": "object",
+      "description": "the key decision/output of this stage"
+    },
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "evidence": {"type": "array", "items": {"type": "string"}},
+    "unresolved_risks": {"type": "array", "items": {"type": "string"}},
+    "stage_fields": {
+      "type": "object",
+      "description": "stage-specific structured fields — see artifact-validation.md for per-stage schema + cross-stage rules"
+    }
+  },
+  "$comment": "Per-stage stage_fields (examples): data-audit={biological_unit,estimand,fatal_issues,cohort_structure,leakage_graph,split_strategy}; design={problem_definition,estimand,notation_and_shapes,objective_or_likelihood,identifiability,failure_boundaries,complexity}; spec={module_interfaces,acceptance_criteria(each traces to a failure_boundary),pseudocode_hashes}; viability={competitors_by_category,viability_dimensions,viability_total,viability_range,should_proceed}; brainstorm={candidates:[{title,hypothesis,gap,novelty_locus}],chosen_id}; audit={panel_findings,verdict,blocking}."
+}
