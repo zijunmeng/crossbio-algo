@@ -6,14 +6,19 @@ from sklearn.neighbors import NearestNeighbors
 
 # ---------- Task 1: pair_map (配对潜在, CCA-via-SVD) ----------
 def pair_map(multi_adata, k=30):
-    """学 RNA-ATAC 配对潜在。返回 Z_pair[n,k], W_rna[g_rna,k], W_atac[g_atac,k]."""
+    """学 RNA-ATAC 配对潜在 (CCA-via-SVD on the cross-covariance).
+
+    返回 Z_pair[n,k], W_rna[g_rna,k], W_atac[g_atac,k], svals[k].
+    svals 是 cross-covariance 的奇异值；cross-modal ATAC 可由
+    (X_rna @ W_rna) @ diag(svals) @ W_atac.T 重构 (低秩近似).
+    """
     X_rna = np.asarray(multi_adata.X, dtype=float)
     X_atac = np.asarray(multi_adata.obsm['ATAC'], dtype=float)
     C = (X_rna.T @ X_atac) / X_rna.shape[0]          # cross-covariance
     U, S, Vt = np.linalg.svd(C, full_matrices=False)
-    U, Vt = U[:, :k], Vt[:k, :]
+    U, S, Vt = U[:, :k], S[:k], Vt[:k, :]
     Z_pair = X_rna @ U                                # [n, k]
-    return Z_pair, U, Vt.T                            # W_rna=U, W_atac=Vt.T
+    return Z_pair, U, Vt.T, S                         # W_rna=U, W_atac=Vt.T, svals=S
 
 
 # ---------- Task 2: project (空间投射 + 置信度, AC-1) ----------
@@ -48,7 +53,7 @@ def downsample_curve(n_multi=300, n_spatial=200, k=5, g_rna=20, g_atac=30,
 
     multi = _AD(np.clip(Z_multi @ W_rna, 0, None).astype('float32'),
                 {'ATAC': np.clip(Z_multi @ W_atac.T, 0, None).astype('float32')})
-    Z_pair, _, _ = pair_map(multi, k=k)
+    Z_pair, _, _, _ = pair_map(multi, k=k)
 
     X_space_ref = np.clip(Z_space @ W_rna, 0, None)             # 全 reads 参考
     spatial_Z_ref, _ = project(X_space_ref, Z_pair, np.asarray(multi.X))

@@ -1,6 +1,14 @@
 ---
 name: brainstorm
-description: Use when a researcher has a fuzzy interest and wants MULTIPLE candidate ideas / project topics before any single one is evaluated. Two modes — dev (invent a new algorithm / method / tool: each idea is a seed of *algorithm invention*, carrying the mathematical essence + cross-domain spark) or research (explore a biomedical direction: hypothesis / gap / novelty). Triggered when the user wants to find topics, has not yet committed to one, and is before topic-viability-assessment. Runs BEFORE topic-viability-assessment.
+description: >-
+  Use when a researcher has a fuzzy interest and wants MULTIPLE candidate
+  ideas / project topics before any single one is evaluated. Two modes —
+  dev (invent a new algorithm / method / tool: each idea is a seed of
+  algorithm invention, carrying the mathematical essence + cross-domain
+  spark) or research (explore a biomedical direction: hypothesis / gap /
+  novelty). Triggered when the user wants to find topics, has not yet
+  committed to one, and is before topic-viability-assessment. Runs BEFORE
+  topic-viability-assessment.
 ---
 
 # Brainstorm

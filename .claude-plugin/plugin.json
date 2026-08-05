@@ -1,9 +1,12 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "crossbio-algo",
-  "version": "0.1.0",
-  "description": "Autonomous research loop for computational biology: brainstorm → viability (competitor deep-comparison) → adversarial cross-model audit → algorithm-design → executable spec (kiro requirements/design/tasks). Installs scientific-honesty discipline a generic coding agent won't proactively do: avoid reinventing competitors, avoid overclaim, externalize reasoning, define failure boundaries, produce executable specs.",
-  "author": "crossbio-algo",
+  "displayName": "CrossBio Algorithm Development",
+  "version": "0.2.0",
+  "description": "Cross-domain bioinformatics algorithm generation loop: brainstorm → competitor deep-comparison → adversarial audit → algorithm-design → executable spec (kiro). Installs scientific-honesty discipline a generic agent won't proactively do.",
+  "author": {"name": "crossbio-algo contributors"},
   "license": "MIT",
-  "homepage": "https://github.com/YOUR/crossbio-algo",
+  "homepage": "https://github.com/crossbio-algo/crossbio-algo",
+  "keywords": ["bioinformatics", "computational-biology", "algorithm-design", "research", "single-cell", "spatial-omics"],
   "skills": ["skills/using-crossbio-algo", "skills/brainstorm", "skills/topic-viability-assessment", "skills/algorithm-design", "skills/spec-writing", "skills/cross-model-audit"]
 }

@@ -60,8 +60,13 @@ Agent(prompt="<scenario> + <paste skill SKILL.md content>", subagent_type="gener
 | using-crossbio-algo | 不识别闭环；不触发 skill 序列（直接单步答） | bootstrap 闭环 + 按序触发 |
 | topic-viability | 不结构化（无对比表/tier/插槽；虽 depth 但定性叙述） | 深度对比表 + tier + 插槽判断 |
 
-**结论**：每个 skill 的 GREEN 都验证过（SCOUT/spaGRN 等实测）；RED 揭示裸 Claude 虽强但缺结构化纪律——skill 把"偶发的好行为"变成"每次必走的结构化流程"。
+**结论**：区分"实测"与"推断"——
+- **RED 实测**：全部 5 skill + topic-viability 的裸行为已记录（见上表"RED 实测"列）。
+- **GREEN 实测**：仅 **topic-viability** 有正式的 RED+GREEN 对照实测。
+- **GREEN 推断**（非实测）：其余 5 skill（brainstorm / algorithm-design / spec-writing / cross-model-audit / using-crossbio-algo）的 GREEN 行为是基于之前真实运行（SCOUT / spaGRN / spatialEnKF 等带 skill 的实际项目）的**推断**，**未做正式的 skill-enabled vs skill-disabled 对照 eval suite**。该对照 eval 计划在 v0.2 迁移到 skill-creator eval 框架后补齐。
+
+RED 揭示裸 Claude 虽强但缺结构化纪律——skill 的价值 = 把"偶发的好行为"变成"每次必走的结构化流程"。
 
 ## Status
-- topic-viability: RED demo below; GREEN validated indirectly via spaGRN/SCOUT real runs.
-- others: spec defined; full RED+GREEN runs pending.
+- **topic-viability**: 正式 RED+GREEN 实测完成（RED 见上方 demo，GREEN 经 spaGRN/SCOUT 真实运行间接验证 + 本次对照实测）。
+- **其余 5 skill**: RED 实测完成（裸行为已记录）；GREEN 为基于历史真实运行的推断，**非正式对照 eval**——正式 skill-enabled vs skill-disabled 对照 eval 待做（v0.2 计划迁移到 skill-creator eval 框架）。

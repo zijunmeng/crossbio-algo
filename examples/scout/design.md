@@ -23,16 +23,16 @@ multi_adata.X(RNA) + multi_adata.obsm['ATAC']
 
 ### scout.pair_map.fit (配对潜在, CCA-via-SVD)
 ```python
-from sklearn.decomposition import TruncatedSVD
+import numpy as np
 def fit(multi_adata, k=30):
-    X_rna = multi_adata.X                      # [n, g_rna]
-    X_atac = multi_adata.obsm['ATAC']          # [n, g_atac]
-    C = (X_rna.T @ X_atac) / X_rna.shape[0]    # cross-covariance [g_rna, g_atac]
-    svd = TruncatedSVD(n_components=k, random_state=0)
-    svd.fit(C)
-    W_rna = svd.transform(np.eye(C.shape[0]))  # RNA 侧映射 [g_rna, k]
-    W_atac = svd.components_.T                 # ATAC 侧映射 [g_atac, k]
-    Z_pair = X_rna @ W_rna                     # 配对潜在 [n, k]
+    X_rna = np.asarray(multi_adata.X, dtype=float)        # [n, g_rna]
+    X_atac = np.asarray(multi_adata.obsm['ATAC'], dtype=float)  # [n, g_atac]
+    C = (X_rna.T @ X_atac) / X_rna.shape[0]               # cross-covariance [g_rna, g_atac]
+    U, S, Vt = np.linalg.svd(C, full_matrices=False)      # C = U @ diag(S) @ Vt
+    U, Vt = U[:, :k], Vt[:k, :]                           # 截断到 top-k
+    W_rna = U                                             # RNA 侧映射 [g_rna, k]
+    W_atac = Vt.T                                         # ATAC 侧映射 [g_atac, k]
+    Z_pair = X_rna @ W_rna                                # 配对潜在 [n, k]
     return Z_pair, W_rna, W_atac
 ```
 
@@ -57,7 +57,7 @@ def impute(spatial_Z, W_atac):
 ```
 
 ## Dependencies
-`scanpy>=1.10`, `squidpy>=1.4`, `scikit-learn>=1.4` (TruncatedSVD/NearestNeighbors), `POT>=0.9` (sinkhorn, 可选 OT 精化), `numpy>=1.26`, `scipy>=1.11`, `anndata>=0.10`.
+`scanpy>=1.10`, `squidpy>=1.4`, `scikit-learn>=1.4` (NearestNeighbors), `numpy>=1.26` (`np.linalg.svd` for pair_map), `scipy>=1.11`, `anndata>=0.10`, `POT>=0.9` (sinkhorn, 可选 OT 精化).
 
 ## Engineering Constraints
 全 CPU (无 GPU, 禁 torch 训练); mini-batch OT (batch=4096) 扛百万像素; scanpy/squidpy 生态; `random_state=0` 固定可复现; 记录 db/数据版本。
