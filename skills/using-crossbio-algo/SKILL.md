@@ -45,6 +45,34 @@ research-intake  (user has data + research question)
 - **Honest colleague**: no skill vetoes the user. Viability is counsel; it forces an *informed* decision (build the comparison table, ask the tier), then respects the user's call. Audit is two-way insurance (prevents under-score AND over-claim).
 - **Truth carries forward**: every handoff carries upstream truth (competitors, failure boundaries, target tier) — no stage restarts from a blank slate.
 
+## Effort modes (Quick / Standard / Publication)
+The full loop (above) is the **Publication** mode — the complete closed loop. For many tasks that is overkill (a quick feasibility check or a T3 exercise does not need brainstorm + viability + multi-round audit). So the loop has three effort tiers. **State the effort mode out loud** when you start (the same way you state the mode), so the user knows the scope.
+
+### Quick (~30 min — fast feasibility / practice)
+Run: **data-and-estimand-audit** → **algorithm-design-lite** → basic tests. Skip brainstorm / viability / full spec / adversarial-panel-audit.
+- **algorithm-design-lite** = only the 4 load-bearing fields of the formal contract: `problem_definition`, `estimand`, `objective_or_likelihood`, `failure_boundaries`. (The full 16-field contract is NOT required here — see `algorithm-design` SKILL for the lite variant.)
+- The data-audit artifact is still produced (estimand must carry forward).
+- **Best for**: "is this idea even viable?", T3 learning, T4 internal one-off need, a single quick sanity check.
+
+### Standard (~half day — the regular tool paper)
+Run: **data-and-estimand-audit** → **topic-viability-assessment** (deep-comparison table + multi-dim score) → **algorithm-design** (full formal 16-field contract) → **spec-writing** (kiro three-phase) → **1 round adversarial-panel-audit**.
+- Skip brainstorm (user already has the idea; viability scores that one idea).
+- **Best for**: T2 tool paper — the default mode for "build me a tool worth publishing."
+
+### Publication (~multiple days — full publication)
+Run the **full closed loop**: brainstorm (multiple ideas) → viability (full assessment) → **multi-round adversarial-panel-audit** → algorithm-design (formal) → spec-writing (kiro) → benchmark → Publication Roadmap.
+- **Best for**: T1 top-tier / a complete publication where the full honesty discipline (multi-idea generation, multi-round adversarial audit) earns its cost.
+
+### Mode selection
+- **User picks** explicitly ("just a quick check" → Quick; "this is a real paper" → Standard/Publication).
+- **Auto-infer from target tier** if the user doesn't pick: **T3/T4 → Quick**, **T2 → Standard**, **T1 → Publication**.
+- The user can override the inferred mode at any time.
+
+### What is NEVER skipped (holds across all modes)
+- **data-and-estimand-audit** always runs — even in Quick, the data/estimand audit artifact is produced (leakage / batch / ground-truth audit before any invention).
+- **Artifact chain** stays intact across modes — `data-audit` (root) → `design` → `spec` → `code` with estimand continuity and provenance hashes. The lite design still emits the `estimand` + `failure_boundaries` that downstream artifacts validate against.
+- **Honest-colleague principle** holds — no mode vetoes the user; mode only sets scope.
+
 ## How to invoke
 Each skill auto-triggers from its own `description`. To force a stage, use the Skill tool with the skill name. Read the individual SKILL.md files for each skill's internal rules.
 

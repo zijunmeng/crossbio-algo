@@ -25,6 +25,19 @@ brainstorm  (N candidate ideas; dev-mode: algorithm-abstraction + cross-domain i
 ```
 **Fallback mechanism**: an idea rejected at any stage falls back to the remaining candidates — never discarded.
 
+## Effort modes — Quick / Standard / Publication
+The full loop is for a complete publication. For lighter tasks it is overkill, so there are three tiers. **State the mode out loud** when you start.
+
+| Mode | Runs | Skips | ~Time | Fits |
+|---|---|---|---|---|
+| **Quick** | data-and-estimand-audit → algorithm-design-lite (only the 4 load-bearing fields: `problem_definition` / `estimand` / `objective_or_likelihood` / `failure_boundaries`) → basic tests | brainstorm, viability, full 16-field design, full spec, adversarial-panel-audit | ~30 min | "is this idea viable?", T3 learning, T4 internal one-off |
+| **Standard** | data-audit → topic-viability (deep-comparison + multi-dim score) → algorithm-design (full 16-field) → spec-writing (kiro 3-phase) → 1 round adversarial-panel-audit | brainstorm (user already has the one idea) | ~half day | T2 tool paper — the default |
+| **Publication** | the full closed loop: brainstorm (≥3 ideas) → viability → multi-round audit → formal design → kiro spec → benchmark → Publication Roadmap | nothing | ~multiple days | T1 top-tier / complete publication |
+
+**Mode selection**: user picks, or auto-infer from target tier — **T3/T4 → Quick, T2 → Standard, T1 → Publication** (user can override).
+
+**Never skipped** (all modes): `data-and-estimand-audit` always runs (the estimand/leakage audit is the root of the artifact chain); the artifact chain stays intact with estimand continuity + provenance hashes; the honest-colleague principle holds.
+
 ## Install
 ```bash
 git clone https://github.com/YOUR/crossbio-algo

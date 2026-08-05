@@ -19,6 +19,7 @@ Follow the **crossbio-algo** loop. Read the **crossbio-algo:using-crossbio-algo*
 - **domain**: <e.g. spatial transcriptomics / single-cell / proteomics>
 - **compute**: <e.g. no GPU, Python + scanpy/squidpy; or GPU available>
 - **target tier**: <T1 paradigm-novelty / T2 tool paper / T3 learning / T4 specific-data>
+- **effort mode**: <Quick / Standard / Publication — or leave blank to auto-infer from tier: T3/T4→Quick, T2→Standard, T1→Publication>
 - **data I have**: <e.g. paired scMultiome + Stereo-seq>
 
 ## Honest-colleague principle

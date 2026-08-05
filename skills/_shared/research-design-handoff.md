@@ -28,6 +28,24 @@ research-intake  (user has data + research question)
 adversarial-panel-audit is **horizontal** — it fires at EACH ★ before the artifact is trusted.
 data-and-estimand-audit is a **GATE** — it runs once, before brainstorm, and blocks the loop on fatal issues.
 
+## Effort Modes (Quick / Standard / Publication)
+The full loop above is **Publication** mode. Not every task needs the full closed loop — a quick feasibility check or a T3 exercise doesn't earn back the cost of brainstorm + viability + multi-round audit. So there are three effort tiers. **State the effort mode out loud** at the start of a run.
+
+| Mode | Runs | Skips | ~Time | Fits |
+|---|---|---|---|---|
+| **Quick** | data-and-estimand-audit → algorithm-design-lite (only `problem_definition` / `estimand` / `objective_or_likelihood` / `failure_boundaries`) → basic tests | brainstorm, topic-viability, full 16-field design, full spec, adversarial-panel-audit | ~30 min | "is this idea viable?", T3 learning, T4 internal one-off |
+| **Standard** | data-and-estimand-audit → topic-viability-assessment (deep-comparison + multi-dim score) → algorithm-design (full 16-field) → spec-writing (kiro 3-phase) → 1 round adversarial-panel-audit | brainstorm (user already has the one idea) | ~half day | T2 tool paper (default for "build a publishable tool") |
+| **Publication** | the **full closed loop**: brainstorm (≥3 ideas) → viability → multi-round adversarial-panel-audit → algorithm-design (formal) → spec-writing (kiro) → benchmark → Publication Roadmap | nothing | ~multiple days | T1 top-tier / complete publication |
+
+### Mode selection
+- User picks explicitly, OR auto-infer from target tier: **T3/T4 → Quick, T2 → Standard, T1 → Publication**. User can override anytime.
+
+### What NEVER gets skipped (holds across all modes)
+- **data-and-estimand-audit always runs** — even Quick produces the data-audit artifact (leakage / batch / ground-truth audit before any invention). The GATE semantics (fatal_issues block) apply in every mode.
+- **The artifact chain stays intact** — `data-audit` (root) → `design` → `spec` → `code`, with `parent_artifact_id` + `provenance_hash`. Even Quick's lite design still emits the `estimand` + `failure_boundaries` that downstream artifacts (if any) validate against. The 5 cross-stage consistency checks (estimand continuity, failure_boundary→acceptance, notation consistency, pseudocode→code, provenance) apply to whatever stages actually run in that mode.
+- **estimand carries forward continuously** — `data-audit.estimand` propagates to design (lite or full); changing it requires an explicit `estimand_change_justification` in every mode.
+- **Honest-colleague principle** holds — mode sets scope, it never vetoes the user.
+
 ## The "Honest Colleague" Principle (unchanged)
 - No skill vetoes the user. They are counsel, not gatekeeper.
 - "Worth doing" is multi-dimensional (target tier). Ask tier first; score under that ruler.
