@@ -14,7 +14,7 @@
 
 | P0 | v0.2.1 修复 | 证据 |
 |---|---|---|
-| **P0-1** 新旧合同并存（6 vs 16 字段）| 单一 schema `schemas/stage-schemas.json`（`$defs`+`oneOf` 按 stage 约束 `stage_fields`）；字段计数修正为 **15 required + 2 optional**；6-field 残留清零 | `grep` 无残留；schema 拒绝缺 `objective_or_likelihood` 的 design |
+| **P0-1** 新旧合同并存（6 vs 16 字段）| 单一 schema `crossbio_validate/schemas/stage-schemas.json`（`$defs`+`oneOf` 按 stage 约束 `stage_fields`）；字段计数修正为 **15 required + 2 optional**；6-field 残留清零 | `grep` 无残留；schema 拒绝缺 `objective_or_likelihood` 的 design |
 | **P0-2** artifact 只"设计为可检查" | `crossbio_validate` CLI（schema + provenance + parent-chain + stage-order + fatal-gate + 5 跨阶段规则）；**21 测试**（每规则 GREEN + 故意漂移 RED）| `crossbio validate-chain` 抓 estimand/notation/pseudocode 漂移 |
 | **P0-3** SCOUT 没满足自身 requirements | SCOUT 重建为 **PLS + entropic OT** 旗舰；**9 测试**；每个 AC trace 到 failure_boundary | `examples/scout/artifacts/` 链 `validate-chain` 通过（0 findings）|
 | **P0-4** 数学公式不一致 | 唯一 `B_atac`（`impute` 与重构检查共用）；PLS **中心化**；不再误称 CCA | `test_impute_uses_one_B_atac`、`test_pair_map_is_pls_not_uncentered_MUTATION` |
@@ -55,7 +55,7 @@
 | **adversarial-panel-audit** | 对抗审计 | **诚实命名**（same-model panel，非 cross-model）；**6 agents**（domain-biologist/statistical-reviewer/algorithm-methodologist/benchmark-auditor/implementation-reviewer/reproducibility-reviewer）；**不强迫找问题**（禁空泛 looks good + 可"no material issue" + defender/replicator）；结构化 finding（claim/evidence/severity/confidence/reproduction_check/blocking/fix）|
 | **agents/** (6) | 审计角色定义 | 每个 .md：角色 + 审什么 + checklist |
 | `_shared/research-design-handoff` | 联动契约 | 完整闭环 + fallback + **三档说明** + **artifact.json 机制** |
-| `schemas/stage-schemas.json` 🆕 | artifact 结构 | JSON Schema（id/parent/stage/provenance_hash/stage_fields）|
+| `crossbio_validate/schemas/stage-schemas.json` 🆕 | artifact 结构 | JSON Schema（id/parent/stage/provenance_hash/stage_fields）|
 | `_shared/artifact-validation.md` 🆕 | 5 条跨阶段校验 | estimand 连续 / failure_boundary→acceptance / notation 一致 / pseudocode→code / provenance |
 | `algorithm-design/cross-domain-inspiration` | 28 域灵感池 | 数学本质→科学领域映射 |
 
@@ -103,7 +103,7 @@ data-and-estimand-audit ✋GATE  (fatal_issues 非空 = 停)
 crossbio-algo/
 ├── .claude-plugin/plugin.json
 ├── README.md  CLAUDE.md  PROJECT_SUMMARY.md  CHANGELOG.md  CITATION.cff  CONTRIBUTING.md  LICENSE  .gitignore  pyproject.toml  requirements.txt
-├── schemas/stage-schemas.json          (canonical machine schema, $defs+oneOf)  🆕 v0.2.1
+├── crossbio_validate/schemas/stage-schemas.json          (canonical machine schema, $defs+oneOf)  🆕 v0.2.1
 ├── crossbio_validate/                  (validator CLI: schema + chain + 5 rules)   🆕 v0.2.1
 ├── skills/
 │   ├── using-crossbio-algo/SKILL.md

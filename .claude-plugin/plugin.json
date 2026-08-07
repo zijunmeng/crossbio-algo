@@ -2,11 +2,11 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "crossbio-algo",
   "displayName": "CrossBio Algorithm Development",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Cross-domain bioinformatics algorithm generation loop: brainstorm → competitor deep-comparison → adversarial audit → algorithm-design → executable spec (kiro). Installs scientific-honesty discipline a generic agent won't proactively do.",
-  "author": {"name": "crossbio-algo contributors"},
+  "author": {"name": "zijunmeng", "url": "https://github.com/zijunmeng"},
   "license": "MIT",
-  "homepage": "https://github.com/crossbio-algo/crossbio-algo",
+  "homepage": "https://github.com/zijunmeng/crossbio-algo",
   "keywords": ["bioinformatics", "computational-biology", "algorithm-design", "research", "single-cell", "spatial-omics"],
   "skills": ["skills/using-crossbio-algo", "skills/data-and-estimand-audit", "skills/brainstorm", "skills/topic-viability-assessment", "skills/algorithm-design", "skills/spec-writing", "skills/adversarial-panel-audit"]
 }

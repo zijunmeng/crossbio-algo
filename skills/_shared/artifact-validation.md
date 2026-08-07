@@ -4,7 +4,7 @@
 Markdown-only handoffs **drift**. Real example: SCOUT's design.md said `TruncatedSVD + svd.transform(np.eye(...))` (a dimension-mismatch bug), but scout.py silently switched to `np.linalg.svd` — the spec never constrained the code, and nobody caught it until expert review. **`artifact.json` makes each stage's output machine-checkable and defines cross-stage consistency rules that catch such drift automatically.**
 
 ## Per-stage artifact.json
-Each stage emits **`artifact.md`** (human-readable) **+ `artifact.json`** (machine-checkable, schema: `schemas/stage-schemas.json`).
+Each stage emits **`artifact.md`** (human-readable) **+ `artifact.json`** (machine-checkable, schema: `crossbio_validate/schemas/stage-schemas.json`).
 
 ### stage_fields (per stage, the structured payload)
 | stage | stage_fields (key) |
@@ -41,7 +41,7 @@ crossbio stamp <artifact.json>          # authoring helper: write the correct pr
 # or, without installing:  python -m crossbio_validate validate-chain <dir>
 ```
 
-`validate-chain` runs, for a chain: every artifact against `schemas/stage-schemas.json` (intra-stage) + provenance integrity + parent-chain integrity + stage-order + the fatal GATE + the 5 cross-stage rules below. It exits non-zero on any ERROR.
+`validate-chain` runs, for a chain: every artifact against `crossbio_validate/schemas/stage-schemas.json` (intra-stage) + provenance integrity + parent-chain integrity + stage-order + the fatal GATE + the 5 cross-stage rules below. It exits non-zero on any ERROR.
 
 The rule logic (spec — the live code is `crossbio_validate/core.py`):
 ```python

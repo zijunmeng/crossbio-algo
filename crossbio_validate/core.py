@@ -20,9 +20,8 @@ from typing import Optional
 
 import jsonschema
 
-SCHEMA_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "schemas", "stage-schemas.json"
-)
+# The canonical stage schema is bundled INSIDE the package (crossbio_validate/schemas/)
+# so wheels include it. Resolved at runtime via importlib.resources; see load_schema().
 
 STAGES = ["data-audit", "brainstorm", "viability", "design", "spec", "code", "audit"]
 
@@ -69,8 +68,14 @@ def stamp(a: dict) -> dict:
 
 
 def load_schema() -> dict:
-    with open(SCHEMA_PATH) as f:
-        return json.load(f)
+    """Load the canonical stage schema (bundled in the package for wheel correctness)."""
+    try:
+        from importlib.resources import files
+        return json.loads(files("crossbio_validate.schemas").joinpath("stage-schemas.json").read_text())
+    except Exception:  # source-tree fallback (editable / direct run)
+        p = os.path.join(os.path.dirname(__file__), "schemas", "stage-schemas.json")
+        with open(p) as f:
+            return json.load(f)
 
 
 # ---------- per-artifact ----------

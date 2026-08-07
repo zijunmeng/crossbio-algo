@@ -134,7 +134,7 @@ None of the **required** fields are optional; the **encouraged** fields are fill
 - User was forced into a binary on a technical judgment outside their scope → mis-scoped collaboration; the agent should have recommended.
 
 ## Artifact output
-In addition to the formal method contract above (human-readable: 15 required + 2 optional = 17 fields), this stage emits **`artifact.json`** (schema: `schemas/stage-schemas.json`): `stage_fields = {problem_definition, estimand, notation_and_shapes, objective_or_likelihood, identifiability, failure_boundaries, complexity}`.
+In addition to the formal method contract above (human-readable: 15 required + 2 optional = 17 fields), this stage emits **`artifact.json`** (schema: `crossbio_validate/schemas/stage-schemas.json`): `stage_fields = {problem_definition, estimand, notation_and_shapes, objective_or_likelihood, identifiability, failure_boundaries, complexity}`.
 Three fields propagate downstream and are cross-stage-validated (`_shared/artifact-validation.md`):
 - **`estimand` MUST == `data-audit.artifact.estimand`** (rule 1) — drift requires an explicit `estimand_change_justification`; silent change = invalid.
 - **`failure_boundaries`** propagate to spec — every boundary item MUST have a matching `spec.acceptance_criteria` with `traces_to` naming it (rule 2, no orphans).
@@ -143,7 +143,7 @@ Three fields propagate downstream and are cross-stage-validated (`_shared/artifa
 ## References
 - `cross-domain-inspiration.md` (in this folder) — the 28-domain essence→domains map + method pool.
 - `_shared/research-design-handoff.md` — the viability→design contract (read if chained from **crossbio-algo:topic-viability-assessment**).
-- `schemas/stage-schemas.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits.
+- `crossbio_validate/schemas/stage-schemas.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits.
 
 ## Example — scRNA-seq imputation (formal method contract)
 

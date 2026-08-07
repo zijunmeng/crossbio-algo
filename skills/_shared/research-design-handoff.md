@@ -68,7 +68,7 @@ VIABILITY_HANDOFF:
 **design → spec**
 ```
 DESIGN_HANDOFF:
-  proposed_algorithm, failure_boundaries, notation_and_shapes,   # design contract (machine payload — schemas/stage-schemas.json)
+  proposed_algorithm, failure_boundaries, notation_and_shapes,   # design contract (machine payload — crossbio_validate/schemas/stage-schemas.json)
   simulation_dgp, novelty_or_utility_basis, optimization_or_inference   # + carried target_tier
 ```
 **spec → code**
@@ -98,7 +98,7 @@ When an idea/artifact is rejected at viability / audit / design:
 Markdown-only handoffs **drift**. Real example: SCOUT's design.md said `TruncatedSVD` (a dimension-mismatch bug), but `scout.py` silently switched to `np.linalg.svd` — the spec never constrained the code, and nobody caught it until expert review. To make that drift machine-detectable, **every stage emits TWO artifacts**:
 
 - **`artifact.md`** — the human-readable output this contract already describes (the formal-method-contract design, the kiro three-phase spec, the data-audit table, etc.).
-- **`artifact.json`** — a machine-checkable companion whose schema is `schemas/stage-schemas.json` and whose `stage_fields` are the stage's structured payload (see `artifact-validation.md` for the per-stage field table).
+- **`artifact.json`** — a machine-checkable companion whose schema is `crossbio_validate/schemas/stage-schemas.json` and whose `stage_fields` are the stage's structured payload (see `artifact-validation.md` for the per-stage field table).
 
 ### Artifact chain (root → leaf)
 ```
@@ -122,7 +122,7 @@ Before a stage trusts its input, it runs the 5 cross-stage consistency checks de
 
 **Validation failure = drift = STOP.** Do not proceed to the next stage until the drift is reconciled (fix the downstream artifact, or document an explicit, justified divergence). This is a hard gate, on top of the existing adversarial-panel-audit adversarial gate.
 
-**References**: schema — `schemas/stage-schemas.json`; rules + validation pseudocode — `_shared/artifact-validation.md`.
+**References**: schema — `crossbio_validate/schemas/stage-schemas.json`; rules + validation pseudocode — `_shared/artifact-validation.md`.
 
 ## One-line summary
 > brainstorm generates, viability scores under the user's ruler, design invents under competitor constraint, spec makes it buildable, and audit adversarially checks each — truth carries forward, never restarted, never trusted unchecked, and now machine-checked via the artifact.json chain at every handoff.

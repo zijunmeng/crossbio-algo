@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crossbio-algo-validator"
-version = "0.2.1"
+version = "0.2.2"
 description = "crossbio-algo machine-checkable artifact validator (schema + chain + 5 cross-stage rules)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -12,10 +12,14 @@ license = { text = "MIT" }
 dependencies = ["jsonschema>=4"]
 
 [project.optional-dependencies]
-test = ["pytest>=7"]
+test = ["pytest>=7", "pyyaml>=6"]
+examples = ["numpy>=1.26", "scikit-learn>=1.4"]   # for examples/scout/
 
 [project.scripts]
 crossbio = "crossbio_validate.cli:main"
 
 [tool.setuptools]
-packages = ["crossbio_validate"]
+packages = ["crossbio_validate", "crossbio_validate.schemas"]
+
+[tool.setuptools.package-data]
+"crossbio_validate.schemas" = ["*.json"]

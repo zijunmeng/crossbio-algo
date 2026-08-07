@@ -2,7 +2,18 @@
 
 All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased / 0.2.1] — 2026-08-07
+## [0.2.2] — 2026-08-08
+
+### Fixed (release blockers)
+- CI was red: workflow now installs via `pip install -e \".[test]\"` (PyYAML added to test extras) — single dependency source.
+- Version identity unified: `plugin.json` 0.2.0 -> 0.2.2, homepage corrected to `zijunmeng/crossbio-algo`; `tests/test_meta.py::test_all_versions_match` enforces pyproject == plugin.json == CITATION == CHANGELOG.
+- Packaging: canonical schema moved INSIDE the package (`crossbio_validate/schemas/`, resolved via `importlib.resources`) so wheels include it; editable install previously masked the `../schemas/` path. CI now runs `python -m build` + wheel install + `crossbio validate-chain` to test the installed-wheel path.
+- README scout test count corrected 8 -> 9.
+
+### Theme
+- v0.2.2 migrates the validator from DECLARED->TRACED toward **TRACED->TESTED**: real source hashing + FB->AC->TEST->RESULT graph + `verification_mode` (incl. `documented_limitation`).
+
+## [0.2.1] — 2026-08-07
 
 ### Added
 - Canonical machine schema `schemas/stage-schemas.json` (`$defs` for every stage + top-level `oneOf`) — the single source of truth for all `artifact.json` shapes.
@@ -16,7 +27,7 @@ All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](htt
 - `algorithm-design` contract relabeled and correctly counted: **15 required + 2 optional** (17-field) Formal Method Contract, grouped Problem / Formalization / Algorithm / Guarantees / Validation. (The earlier "16-field" count was a mis-count; the field set itself was already the 17 above.)
 - `skills/_shared/artifact-validation.md` — the 5 cross-stage rules now reference a real implemented validator (`crossbio_validate`), not pseudocode.
 - `topic-viability-assessment` scoring: the single false-precision point estimate is replaced by a **decision uncertainty band** (pessimistic / base / optimistic), whose width is derived from each dimension's per-dimension confidence/evidence grade. Explicitly framed as a *decision* band, not a statistical confidence interval (no coverage guarantee). The per-dimension arithmetic now closes.
-- README refreshed to v0.2.1: correct test counts (21 validator / 8 scout), real repo tree, new Validator section, no stale placeholders.
+- README refreshed to v0.2.1: correct test counts (21 validator / 9 scout), real repo tree, new Validator section, no stale placeholders.
 
 ### Fixed
 - 6-field vs Formal-Method-Contract drift reconciled across `spec-writing`, the handoff contract, and `brainstorm` — all now point at the same 15-required + 2-optional design contract.

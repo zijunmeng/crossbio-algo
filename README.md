@@ -66,7 +66,7 @@ pip install -e ".[test]"
 | `_shared/research-design-handoff` | the loop contract + fallback mechanism |
 
 ## Validator — the machine-checkable handoff
-Each stage emits an `artifact.json` (schema: `schemas/stage-schemas.json`). The `crossbio` validator checks a directory of these as a chain:
+Each stage emits an `artifact.json` (schema: `crossbio_validate/schemas/stage-schemas.json`). The `crossbio` validator checks a directory of these as a chain:
 
 ```bash
 crossbio validate-chain <dir>     # schema + provenance + parent-chain + stage-order
@@ -81,12 +81,12 @@ crossbio stamp <one.json>         # authoring helper: write the correct provenan
 **Run everything:**
 ```bash
 python -m pytest tests/           # 21 validator tests (tests/test_validator.py)
-                                  # + 8 scout tests (examples/scout/test_scout.py)
+                                  # + 9 scout tests (examples/scout/test_scout.py)
 ```
 CI (`.github/workflows/validate.yml`) runs the validator suite plus a skill-frontmatter + plugin-manifest + schema-parse sanity check on every push/PR.
 
 ## Demo
-`examples/scout/` — a full run on **"spatial multimodal data fusion"**: brainstorm (6 ideas) → viability (deep-comparison, 3 rejected) → audit (caught overclaim) → fallback → design → spec (kiro 3-file) → code → **8 tests green** (`examples/scout/test_scout.py`). Produces **SCOUT**, a T2 tool (paired-projection spatial RNA+ATAC integration on **PLS + optimal transport**, all-CPU).
+`examples/scout/` — a full run on **"spatial multimodal data fusion"**: brainstorm (6 ideas) → viability (deep-comparison, 3 rejected) → audit (caught overclaim) → fallback → design → spec (kiro 3-file) → code → **9 tests green** (`examples/scout/test_scout.py`). Produces **SCOUT**, a T2 tool (paired-projection spatial RNA+ATAC integration on **PLS + optimal transport**, all-CPU).
 
 ## Repository layout
 ```
@@ -100,10 +100,10 @@ crossbio-algo/
 │   ├── topic-viability-assessment/  algorithm-design/  spec-writing/
 │   ├── adversarial-panel-audit/  (SKILL.md + agents/*.md)
 │   └── _shared/{research-design-handoff.md, artifact-validation.md}
-├── schemas/stage-schemas.json          CANONICAL machine schema ($defs + oneOf per stage)
+├── crossbio_validate/schemas/stage-schemas.json          CANONICAL machine schema ($defs + oneOf per stage)
 ├── crossbio_validate/                  validator CLI package (cli.py, core.py)
 ├── tests/test_validator.py             21 validator tests (incl. deliberately-drifted RED cases)
-├── examples/scout/                     flagship: design/requirements/tasks.md + scout.py + test_scout.py (8 tests)
+├── examples/scout/                     flagship: design/requirements/tasks.md + scout.py + test_scout.py (9 tests)
 └── .github/workflows/validate.yml      CI: validator suite + frontmatter/manifest/schema sanity
 ```
 

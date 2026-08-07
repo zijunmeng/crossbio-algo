@@ -108,10 +108,10 @@ fatal_issues: ["DS donors all from one site → DS-vs-control confounded with si
 ```
 
 ## Artifact output
-In addition to the table above (human-readable), this stage emits **`artifact.json`** (schema: `schemas/stage-schemas.json`): `stage_fields = {biological_unit, estimand, fatal_issues, cohort_structure, leakage_graph, split_strategy}`.
+In addition to the table above (human-readable), this stage emits **`artifact.json`** (schema: `crossbio_validate/schemas/stage-schemas.json`): `stage_fields = {biological_unit, estimand, fatal_issues, cohort_structure, leakage_graph, split_strategy}`.
 This is the **ROOT** of the artifact chain — `estimand` propagates to every downstream stage (design/spec/code MUST match it, validated by cross-stage rule 1), and **`fatal_issues` non-empty = the chain does not continue** (GATE — same blocking semantics as the GATE decision above, now machine-enforceable).
 
 ## References
 - `crossbio-algo:using-crossbio-algo` — the loop (this skill is the GATE before brainstorm).
 - `crossbio-algo:_shared/research-design-handoff` — the loop contract (data audit artifact carries forward; algorithm-design MUST receive it).
-- `schemas/stage-schemas.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits (root of the chain).
+- `crossbio_validate/schemas/stage-schemas.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits (root of the chain).
