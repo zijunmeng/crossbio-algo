@@ -83,7 +83,7 @@ def main(argv=None) -> int:
         if not arts:
             print(f"no artifacts found in {args.dir}", file=sys.stderr)
             return 2
-        findings = core.validate_chain(arts)
+        findings = core.validate_chain(arts, root=args.dir)
 
     print(core.format_findings(findings))
     return 1 if any(f.severity == "ERROR" for f in findings) else 0

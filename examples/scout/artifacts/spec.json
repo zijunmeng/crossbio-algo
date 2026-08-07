@@ -33,28 +33,32 @@
         "traces_to": [
           "fb1"
         ],
-        "spec": "out-of-manifold spots (nearest paired cell > 3x cloud spacing) SHALL be flagged low_confidence"
+        "verification_mode": "automated_test",
+        "spec": "out-of-manifold spots flagged low_confidence"
       },
       {
         "id": "ac-fb2",
         "traces_to": [
           "fb2"
         ],
-        "spec": "spots with reads < threshold SHALL be flagged low_confidence AND still receive a fallback latent"
+        "verification_mode": "automated_test",
+        "spec": "reads<threshold flagged low_confidence + fallback latent"
       },
       {
         "id": "ac-fb3",
         "traces_to": [
           "fb3"
         ],
-        "spec": "weak-pairing sweep (pairing_strength -> 0) SHALL drive ATAC recovery toward the naive baseline"
+        "verification_mode": "documented_limitation",
+        "spec": "weak-pairing sweep — NOT YET tested (Phase 2 will add a real DGP + test)"
       },
       {
         "id": "ac-fb4",
         "traces_to": [
           "fb4"
         ],
-        "spec": "documented limitation: batch shift not modeled; flagged in Publication Roadmap"
+        "verification_mode": "documented_limitation",
+        "spec": "batch shift not modeled — known limitation"
       },
       {
         "id": "ac-bench",
@@ -62,7 +66,8 @@
           "fb1",
           "fb3"
         ],
-        "spec": "on semi-synthetic in-manifold data, SCOUT per-peak ATAC recovery SHALL exceed mean-impute and zero baselines"
+        "verification_mode": "benchmark",
+        "spec": "SCOUT per-peak recovery > mean/zero baselines on semi-synthetic"
       }
     ],
     "pseudocode_hashes": {
@@ -71,5 +76,5 @@
       "impute": "sha256:z-batac"
     }
   },
-  "provenance_hash": "a0912b6e5641"
+  "provenance_hash": "850a20e0d0bf"
 }

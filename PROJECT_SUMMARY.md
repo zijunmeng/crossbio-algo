@@ -1,4 +1,20 @@
-# crossbio-algo — 项目总结 (v0.2.1)
+# crossbio-algo — 项目总结 (v0.2.2)
+
+## v0.2.2（当前）—— DECLARED → TRACED → **TESTED**
+
+三轮评审（**7.6/10**）后,核心论点:**DECLARED ≠ TRACED ≠ TESTED ≠ VALIDATED ≠ SCIENTIFICALLY SUPPORTED**。v0.2.1 只做到 DECLARED→TRACED(结构可追溯);v0.2.2 解决 **TRACED→TESTED** —— validator 现在能区分"声明"与"被验证"。
+
+| Phase | 内容 | 证据 |
+|---|---|---|
+| **0 release blockers** | CI 红(PyYAML)修复 `pip install -e ".[test,examples]"`;版本单源(plugin.json/pyproject/CITATION/CHANGELOG 一致,`test_meta` 强制);schema 移入 package(`importlib.resources`),**wheel 实测含 schema**;README 8→9 | 干净 conda env wheel build+install+validate 从 /tmp 通过 |
+| **1 executable trace(中心)** | 真 source hash(从磁盘重算);`FB→AC→TEST→RESULT` 图;`verification_mode`(test/sim/benchmark/**documented_limitation**/...);**规则 6**:声明 tested 但无 passing test → FAIL;**规则 7**:documented_limitation 不能标 pass;**规则 8**:source 漂移 → FAIL | 26 validator 测试(含攻击样本);SCOUT fb3/fb4 诚实标 documented_limitation;**validator 拒绝 v0.2.1 的假声明**(把 fb3 翻成 tested → "DECLARED, not TESTED")|
+
+**全套 42 测试**(validator 26 + viability 5 + SCOUT 9 + meta 2),crossbio env 干净验证通过。Phase 2(SCOUT 诚实最小化)+ Phase 3(skill effectiveness benchmark)进行中。
+
+---
+
+## v0.2.1 —— 把 "machine-checkable" 从纸面变成会跑的代码
+
 
 > **给评审专家的快速理解文档。** 读这份 + `README.md` + `examples/scout/` + `tests/baseline-tests.md` 即可全面理解。
 

@@ -60,7 +60,7 @@ def spec(**over):
         "skill_version": "0.2.1",
         "stage_fields": {
             "module_interfaces": {"impute": {"out": {"name": "X", "shape": "n×g"}}},
-            "acceptance_criteria": [{"id": "ac1", "traces_to": ["fb1"]}],
+            "acceptance_criteria": [{"id": "ac1", "traces_to": ["fb1"], "verification_mode": "analytic_argument"}],
             "pseudocode_hashes": {"impute": "abc123"},
         },
     }
@@ -78,6 +78,8 @@ def code(**over):
             "module_hashes": {"impute": "def456"},
             "test_results": {"passed": 8},
             "acceptance_status": "all pass",
+            "implementations": [],
+            "tests": [],
         },
     }
     a.update(over)
@@ -271,3 +273,70 @@ def test_cli_validate_single_artifact(tmp_path, capsys):
     p = tmp_path / "a.json"
     json.dump(da(), open(p, "w"))
     assert main(["validate", str(p)]) == 0
+
+
+# ---------------- Phase 1: executable trace (DECLARED vs TESTED) ----------------
+def _write_src(tmp_path, name="src.py", body="def pair_map():\n    return 1\n"):
+    p = tmp_path / name
+    p.write_text(body)
+    return p
+
+
+def test_good_chain_with_code_passes(tmp_path):
+    """Correct source hashes + a passing test for an automated_test AC => valid."""
+    src = _write_src(tmp_path)
+    src_sha = core._source_sha256(str(src), "pair_map")  # same hashing the validator applies
+    s = spec()
+    s["stage_fields"]["acceptance_criteria"] = [
+        {"id": "ac1", "traces_to": ["fb1"], "verification_mode": "automated_test"}]
+    core.stamp(s)
+    c = code()
+    c["stage_fields"]["implementations"] = [
+        {"module": "pair_map", "source_file": str(src), "symbol": "pair_map", "source_sha256": src_sha}]
+    c["stage_fields"]["tests"] = [{"test_id": "t1", "verifies_ac": "ac1", "status": "passed"}]
+    core.stamp(c)
+    assert errs(core.validate_chain([da(), design(), s, c], root=str(tmp_path))) == []
+
+
+def test_attack_declared_tested_but_no_test():
+    """§3: AC declares verification_mode=automated_test but no passing test links -> FAIL."""
+    s = spec()
+    s["stage_fields"]["acceptance_criteria"] = [
+        {"id": "ac1", "traces_to": ["fb1"], "verification_mode": "automated_test"}]
+    core.stamp(s)
+    c = code()  # tests=[] -> nothing verifies ac1
+    assert "test-link" in rules(errs(core.validate_chain([da(), design(), s, c])))
+
+
+def test_attack_source_hash_drift(tmp_path):
+    """§2: source edited but source_sha256 not updated -> FAIL."""
+    src = _write_src(tmp_path)
+    c = code()
+    c["stage_fields"]["implementations"] = [
+        {"module": "pair_map", "source_file": str(src), "symbol": "pair_map", "source_sha256": "0" * 64}]
+    core.stamp(c)
+    assert "source-hash" in rules(errs(core.validate_chain([da(), design(), spec(), c], root=str(tmp_path))))
+
+
+def test_attack_limitation_marked_passed():
+    """§4: a documented_limitation cannot be marked status=passed -> FAIL."""
+    s = spec()
+    s["stage_fields"]["acceptance_criteria"] = [
+        {"id": "ac1", "traces_to": ["fb1"], "verification_mode": "documented_limitation"}]
+    core.stamp(s)
+    c = code()
+    c["stage_fields"]["tests"] = [{"test_id": "t1", "verifies_ac": "ac1", "status": "passed"}]
+    core.stamp(c)
+    assert "verification-mode" in rules(errs(core.validate_chain([da(), design(), s, c])))
+
+
+def test_limitation_known_status_ok():
+    """documented_limitation + status=known_limitation is honest -> that rule passes."""
+    s = spec()
+    s["stage_fields"]["acceptance_criteria"] = [
+        {"id": "ac1", "traces_to": ["fb1"], "verification_mode": "documented_limitation"}]
+    core.stamp(s)
+    c = code()
+    c["stage_fields"]["tests"] = [{"test_id": "t1", "verifies_ac": "ac1", "status": "known_limitation"}]
+    core.stamp(c)
+    assert "verification-mode" not in rules(errs(core.validate_chain([da(), design(), s, c])))

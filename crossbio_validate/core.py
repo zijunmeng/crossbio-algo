@@ -338,7 +338,7 @@ def rule4_pseudocode_to_code(arts: list[dict]) -> list[Finding]:
     return out
 
 
-def validate_chain(arts: list[dict]) -> list[Finding]:
+def validate_chain(arts: list[dict], root: str = ".") -> list[Finding]:
     schema = load_schema()
     out: list[Finding] = []
     for a in arts:
@@ -350,6 +350,107 @@ def validate_chain(arts: list[dict]) -> list[Finding]:
     out += rule2_no_orphan_failure_boundary(arts)
     out += rule3_notation_consistency(arts)
     out += rule4_pseudocode_to_code(arts)
+    out += rule_source_hash(arts, root)
+    out += rule_test_link(arts)
+    out += rule_verification_mode_status(arts)
+    return out
+
+
+# ---------- executable-trace rules (DECLARED vs TESTED) ----------
+TEST_REQUIRED_MODES = {"automated_test", "simulation", "benchmark"}
+
+
+def _source_sha256(path: str, symbol: Optional[str] = None) -> str:
+    """Recompute sha256 of a source file, or just the body of `symbol` (def/class)."""
+    import ast
+    with open(path) as f:
+        src = f.read()
+    if symbol:
+        try:
+            tree = ast.parse(src)
+            seg = None
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == symbol:
+                    seg = ast.get_source_segment(src, node)
+                    break
+            if seg is not None:
+                src = seg
+        except SyntaxError:
+            pass  # unparseable -> hash whole file (likely mismatches -> flagged)
+    return hashlib.sha256(src.encode()).hexdigest()
+
+
+def rule_source_hash(arts: list[dict], root: str = ".") -> list[Finding]:
+    """REAL source hashing (reviewer §2): recompute sha256 from disk, compare to declared.
+    Catches 'source edited but the artifact hash not updated'."""
+    code = next((a for a in arts if a.get("stage") == "code"), None)
+    if not code:
+        return []
+    out: list[Finding] = []
+    for impl in (code.get("stage_fields") or {}).get("implementations") or []:
+        if not isinstance(impl, dict):
+            continue
+        sf = impl.get("source_file")
+        if not sf:
+            continue
+        path = sf if os.path.isabs(sf) else os.path.join(root, sf)
+        if not os.path.exists(path):
+            out.append(Finding("source-hash", "ERROR",
+                f"implementation {impl.get('module')!r}: source_file {sf!r} not found under root",
+                code.get("artifact_id")))
+            continue
+        recomputed = _source_sha256(path, impl.get("symbol"))
+        if recomputed != impl.get("source_sha256"):
+            out.append(Finding("source-hash", "ERROR",
+                f"implementation {impl.get('module')!r}: source_sha256"
+                f" {str(impl.get('source_sha256'))[:12]}.. != recomputed {recomputed[:12]}.."
+                f" (source drifted from the declared hash)",
+                code.get("artifact_id")))
+    return out
+
+
+def rule_test_link(arts: list[dict]) -> list[Finding]:
+    """DECLARED vs TESTED (reviewer §3): an acceptance_criterion in a test-requiring mode
+    MUST have >=1 passing test linked to it."""
+    spec = next((a for a in arts if a.get("stage") == "spec"), None)
+    code = next((a for a in arts if a.get("stage") == "code"), None)
+    if not spec or not code:
+        return []
+    acs = (spec.get("stage_fields") or {}).get("acceptance_criteria") or []
+    tests = (code.get("stage_fields") or {}).get("tests") or []
+    out: list[Finding] = []
+    for ac in acs:
+        if not isinstance(ac, dict) or ac.get("verification_mode") not in TEST_REQUIRED_MODES:
+            continue
+        ac_id = ac.get("id")
+        linked = [t for t in tests if isinstance(t, dict) and t.get("verifies_ac") == ac_id]
+        if not any(t.get("status") == "passed" for t in linked):
+            out.append(Finding("test-link", "ERROR",
+                f"acceptance_criterion {ac_id!r} declares verification_mode={ac.get('verification_mode')!r}"
+                f" but no passing test links to it (DECLARED, not TESTED)",
+                spec.get("artifact_id")))
+    return out
+
+
+def rule_verification_mode_status(arts: list[dict]) -> list[Finding]:
+    """A documented_limitation MUST NOT be marked passed (reviewer §4) — it is known_limitation."""
+    spec = next((a for a in arts if a.get("stage") == "spec"), None)
+    code = next((a for a in arts if a.get("stage") == "code"), None)
+    if not spec or not code:
+        return []
+    acs = (spec.get("stage_fields") or {}).get("acceptance_criteria") or []
+    tests = (code.get("stage_fields") or {}).get("tests") or []
+    out: list[Finding] = []
+    for ac in acs:
+        if not isinstance(ac, dict) or ac.get("verification_mode") != "documented_limitation":
+            continue
+        ac_id = ac.get("id")
+        linked = [t for t in tests if isinstance(t, dict) and t.get("verifies_ac") == ac_id]
+        if any(t.get("status") == "passed" for t in linked):
+            out.append(Finding("verification-mode", "ERROR",
+                f"acceptance_criterion {ac_id!r} is verification_mode=documented_limitation"
+                f" but a linked test marks it status=passed — a limitation cannot be 'passed' (overclaim)",
+                code.get("artifact_id")))
     return out
 
 

@@ -2,19 +2,70 @@
   "artifact_id": "scout-code",
   "stage": "code",
   "parent_artifact_id": "scout-spec",
-  "skill_version": "0.2.1",
+  "skill_version": "0.2.2",
   "stage_fields": {
     "module_hashes": {
-      "pair_map": "sha256:pls-svd-centered",
-      "project": "sha256:sinkhorn-ot",
-      "impute": "sha256:z-batac"
+      "pair_map": "6d1a12a323b8",
+      "project": "c168d2eb0607",
+      "impute": "32fa137b0536"
     },
     "test_results": {
       "scout_tests": 9,
-      "passed": 9,
-      "benchmark_scout_vs_mean": "0.97 vs ~0"
+      "passed": 9
     },
-    "acceptance_status": "all 4 failure_boundaries have a passing test (ac-fb1..ac-fb4) + benchmark (ac-bench); SCGLUE/ISON comparison is a documented external harness (run separately, feed imputed matrices to _perpeak_corr)"
+    "acceptance_status": "fb1/fb2 automated_test PASS; benchmark PASS; fb3/fb4 known_limitation (honest)",
+    "implementations": [
+      {
+        "module": "pair_map",
+        "source_file": "../scout.py",
+        "symbol": "pair_map",
+        "source_sha256": "6d1a12a323b8345066fb82a4a3303642e4a4b53ba19a7c91d2a8e0062c552b72"
+      },
+      {
+        "module": "project",
+        "source_file": "../scout.py",
+        "symbol": "project",
+        "source_sha256": "c168d2eb0607969f8fff92054d57738bac3cb5ed1786113ef578a6ae6b8f6dbf"
+      },
+      {
+        "module": "impute",
+        "source_file": "../scout.py",
+        "symbol": "impute",
+        "source_sha256": "32fa137b05364060599e2404c08cde68f6c206f4b61525e8631a4d71252694cb"
+      }
+    ],
+    "tests": [
+      {
+        "test_id": "TEST-fb1",
+        "verifies_ac": "ac-fb1",
+        "status": "passed",
+        "pytest_nodeid": "examples/scout/test_scout.py::test_low_confidence_out_of_manifold_AC1"
+      },
+      {
+        "test_id": "TEST-fb2",
+        "verifies_ac": "ac-fb2",
+        "status": "passed",
+        "pytest_nodeid": "examples/scout/test_scout.py::test_low_confidence_low_reads_AC2"
+      },
+      {
+        "test_id": "TEST-bench",
+        "verifies_ac": "ac-bench",
+        "status": "passed",
+        "pytest_nodeid": "examples/scout/test_scout.py::test_benchmark_beats_naive_AC4"
+      },
+      {
+        "test_id": "TEST-fb3",
+        "verifies_ac": "ac-fb3",
+        "status": "known_limitation",
+        "pytest_nodeid": null
+      },
+      {
+        "test_id": "TEST-fb4",
+        "verifies_ac": "ac-fb4",
+        "status": "known_limitation",
+        "pytest_nodeid": null
+      }
+    ]
   },
-  "provenance_hash": "31284c81e518"
+  "provenance_hash": "6f7b9a5a2c9f"
 }

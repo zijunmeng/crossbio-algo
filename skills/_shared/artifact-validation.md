@@ -13,8 +13,8 @@ Each stage emits **`artifact.md`** (human-readable) **+ `artifact.json`** (machi
 | brainstorm | `candidates:[{title,hypothesis,gap,novelty_locus}]`, `chosen_id` |
 | viability | `competitors_by_category`, `viability_dimensions`, `viability_total`, `viability_range`, `should_proceed` |
 | design | `problem_definition`, `estimand`, `notation_and_shapes`, `objective_or_likelihood`, `identifiability`, `failure_boundaries`, `complexity` |
-| spec | `module_interfaces`, `acceptance_criteria` (each `traces_to` a failure_boundary), `pseudocode_hashes` |
-| code | `module_hashes`, `test_results`, `acceptance_status` |
+| spec | `module_interfaces`, `acceptance_criteria` (each `id` + `traces_to` a failure_boundary + `verification_mode`), `pseudocode_hashes` |
+| code | `module_hashes`, `test_results`, `acceptance_status`, `implementations:[{module,source_file,source_sha256}]`, `tests:[{test_id,verifies_ac,status}]` |
 | audit | `panel_findings`, `verdict`, `blocking` |
 
 ## Cross-stage consistency rules (MUST check — violation = drift = invalid)
@@ -28,6 +28,16 @@ Each stage emits **`artifact.md`** (human-readable) **+ `artifact.json`** (machi
 4. **pseudocode → code**: each spec pseudocode block has a content hash in `spec.pseudocode_hashes`; the implemented code must match (or `code.divergence` documents why, with justification).
 
 5. **provenance_hash integrity**: `artifact.provenance_hash == sha256(canonical_json(content))[:12]`. Detects tampering or silent edits.
+
+### Executable-trace rules (DECLARED ≠ TESTED — added v0.2.2)
+
+6. **acceptance → test (no false "tested")**: every `spec.acceptance_criteria` whose `verification_mode` is `automated_test` / `simulation` / `benchmark` MUST have ≥1 matching `code.tests` entry (`verifies_ac == ac.id`) with `status == passed`. A criterion that *declares* a test mode but has no passing test linked is **DECLARED, not TESTED** → invalid. (This is the rule that catches v0.2.1's "all 4 failure_boundaries have a passing test" overclaim.)
+
+7. **documented_limitation ≠ passed**: a criterion with `verification_mode == documented_limitation` MUST NOT have a linked test with `status == passed` — a known limitation cannot be "passed"; its status is `known_limitation`. Scientific software distinguishes *untested-by-design* from *verified*.
+
+8. **source hash integrity**: every `code.implementations` entry's `source_sha256` is recomputed from the actual source file (the `symbol`'s body, if given) on disk and compared. A mismatch means the code drifted from the declared artifact → invalid. (Real hashing from source — not hand-written strings compared by key name.)
+
+`verification_mode` ∈ {`automated_test`, `simulation`, `benchmark`, `analytic_argument`, `documented_limitation`, `external_validation`}.
 
 ## How to validate (IMPLEMENTED — was pseudocode in v0.2.0)
 
@@ -51,6 +61,9 @@ The rule logic (spec — the live code is `crossbio_validate/core.py`):
 # rule 3 (notation consistency): every shape in spec.module_interfaces is declared in design.notation_and_shapes.shapes
 #                                  (free-form notation -> WARNING + skip, not a false ERROR)
 # rule 4 (pseudocode -> code): for each module in spec.pseudocode_hashes: module in code.module_hashes OR module in code.divergence
+# rule 6 (test-link / DECLARED!=TESTED): AC verification_mode in {automated_test,simulation,benchmark} => a code.tests entry verifies_ac=ac.id with status=passed
+# rule 7 (limitation != pass): verification_mode=documented_limitation => no linked test may be status=passed (use known_limitation)
+# rule 8 (source hash): code.implementations[].source_sha256 recomputed from disk (symbol body) and compared
 # also enforced: parent_artifact_id resolves; stage order follows ALLOWED_PARENT_STAGES; fatal_issues non-empty + downstream present => risk_accepted required
 ```
 
