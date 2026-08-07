@@ -1,0 +1,11 @@
+# Runtime lock for the crossbio_validate package (the artifact validator CLI).
+# These are the ONLY third-party deps the validator imports.
+jsonschema>=4.21
+
+# dev / test (optional — install via:  pip install -e ".[test]")
+# pytest>=7
+
+# NOTE: this root file pins the validator package ONLY.
+# Do NOT add example/script deps here. SCOUT (examples/scout) uses
+# numpy / scipy / scikit-learn / anndata / POT / scanpy / squidpy — those
+# belong in examples/scout (if anywhere), not in this root lock.

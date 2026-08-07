@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: "crossbio-algo: evidence-driven cross-domain bioinformatics algorithm generation"
+message: "If you use this plugin, please cite it as below."
+type: software
+authors:
+  - alias: zijunmeng
+version: "0.2.1"
+date-released: "2026-08-07"
+license: MIT
+repository-code: "https://github.com/zijunmeng/crossbio-algo"
+keywords: [bioinformatics, algorithm-design, single-cell, spatial-omics, claude-code-skills]

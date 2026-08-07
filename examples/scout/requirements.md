@@ -1,26 +1,46 @@
-# SCOUT — Requirements
+# SCOUT — Requirements (v0.2.1)
+
+> Acceptance criteria below trace to `design.md` failure_boundaries and to `artifacts/spec.json`
+> (validated by `crossbio validate-chain`). v0.2.0 over-claimed (AC-3 scaling, AC-4 SCGLUE/ISON);
+> v0.2.1 states only what the code actually does, and moves scaling / external-tool comparison to the Roadmap.
 
 ## User Need
-研究者拥有配对 scMultiome (RNA+ATAC，无空间) + Stereo-seq (空间 RNA，无 ATAC)，想在亚细胞分辨率整合 + 推断空间 ATAC，发 **T2 工具论文** (Genome Biology/Bioinformatics)。全 CPU (无 GPU)，scanpy 生态。
+A researcher has paired scMultiome (RNA+ATAC, no spatial) + Stereo-seq (spatial RNA, no ATAC) and
+wants to infer spatial ATAC via a CPU-only paired-projection, targeting a **T2 tool paper**.
 
 ## Goals (from algorithm-design)
-配对-投射整合：用 scMultiome 的配对先验给 Stereo-seq 空间 RNA 补 ATAC 维度，输出**空间 ATAC + RNA-ATAC 联合整合状态 + 投射置信度**。
+Paired-projection integration: use the scMultiome paired prior to give spatial RNA an ATAC dimension,
+producing **spatial ATAC + a project confidence/low_confidence flag**.
 
-## Acceptance Criteria (EARS, trace to failure_boundary)
-- **AC-1 ← failure_boundary ③ (RNA-ATAC 空间不保守)**: WHEN 整合落在细胞类型异质区域, THE SYSTEM SHALL 报告 per-cell `project_confidence` 下降, 不假装准。
-- **AC-2 ← failure_boundary ② (空间 RNA 稀疏)**: WHEN per-cell RNA reads < 10, THE SYSTEM SHALL 标记 `obs['low_confidence']=True` 并启用邻域借用 (k≥15)。
-- **AC-3 ← failure_boundary ④ (OT 计算)**: THE SYSTEM SHALL 在 100k 细胞全流程 CPU < 30 min / < 16 GB RAM (mini-batch OT, batch=4096)。
-- **AC-4 (benchmark)**: 在配对 semi-synthetic 上, 空间 ATAC 恢复 AUROC > SCGLUE 基线 且 > ISON 基线, Δ ≥ 0.05。
+## Acceptance Criteria (EARS, each traces to a failure_boundary — no orphans)
+- **AC-fb1 ← fb1 (out-of-manifold)**: WHEN a spatial spot's nearest paired cell is farther than 3× the
+  paired cloud's spacing, THE SYSTEM SHALL flag it `low_confidence=True` and assign the mean paired
+  latent as a fallback (not a confident-but-wrong imputation).
+- **AC-fb2 ← fb2 (sparse spatial RNA)**: WHEN per-spot RNA reads < `reads_threshold`, THE SYSTEM SHALL
+  flag `low_confidence=True` AND still return a latent (fallback), so downstream can down-weight the spot.
+- **AC-fb3 ← fb3 (weak pairing)**: WHEN `pairing_strength → 0` (cross-covariance singular values shrink),
+  THE SYSTEM's ATAC recovery SHALL collapse toward the naive baseline (the method does not hallucinate
+  signal the pairing cannot support).
+- **AC-fb4 ← fb4 (batch shift)**: documented limitation — batch shift between paired and spatial is not
+  modeled; flagged in the Publication Roadmap (an honest boundary, not a silent failure).
+- **AC-bench ← fb1,fb3 (benchmark)**: on semi-synthetic in-manifold data, SCOUT per-peak ATAC recovery
+  SHALL exceed the mean-impute and zero baselines (the naive competitors a fair benchmark MUST include).
+- **AC-consistency (P0-4)**: `impute(spatial_Z, fit)` SHALL equal `spatial_Z @ fit.B_atac` — the ONE
+  cross-modal coefficient also used by the reconstruction check (no shadow formula, no dropped svals).
 
-## Out of Scope
-- 不追求跨域方法新颖 (OT/矩阵分解是成熟方法, T2 增量定位)。
-- 不做 GRN/cis-调控推断 (spaGRN/SCENIC+ 的领域)。
-- 不做 cell segmentation (上游, 用现成 cellpose/spateo 输出)。
+## Out of Scope (moved to Roadmap, NOT claimed as met)
+- **100k spots / CPU <30min / <16GB** (old AC-3): the Sinkhorn here is the reference implementation;
+  the mini-batch + POT production path is a Roadmap engineering item, not validated in this example.
+- **Beat SCGLUE/ISON by Δ≥0.05** (old AC-4): SCGLUE/ISON are deep-learning/GPU tools whose
+  semi-synthetic comparison is an external harness (run them, feed imputed matrices to `_perpeak_corr`);
+  this example benchmarks SCOUT against the naive baselines only.
+- GRN / cis-regulation inference; cell segmentation.
 
 ## Trace Table
 | failure_boundary | validates |
 |---|---|
-| ③ RNA-ATAC 空间不保守 | AC-1 |
-| ② 空间 RNA 稀疏 | AC-2 |
-| ④ OT 计算成本 | AC-3 |
-| benchmark delta | AC-4 |
+| fb1 out-of-manifold | AC-fb1 |
+| fb2 sparse spatial RNA | AC-fb2 |
+| fb3 weak pairing | AC-fb3 |
+| fb4 batch shift | AC-fb4 (documented limitation) |
+| benchmark / consistency | AC-bench, AC-consistency |

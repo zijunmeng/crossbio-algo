@@ -6,7 +6,7 @@ description: Use when a researcher proposes a research direction, thesis/project
 # Topic Viability Assessment
 
 ## Overview
-Before sinking time into a research direction, run ONE honest viability verdict from the stance of a **skeptical senior reviewer**, grounded in **current evidence (not memory)**, scored under the user's actual target tier, and — critically — built on a **per-competitor deep-difference comparison classified into 5 competitor categories, not a head-count of names**, and expressed as a **multi-dimensional score with a plausible range, not a false-precision single point**. Returns a tiered score, an explicit proceed/stop call, and a concrete pivot if the topic is dead.
+Before sinking time into a research direction, run ONE honest viability verdict from the stance of a **skeptical senior reviewer**, grounded in **current evidence (not memory)**, scored under the user's actual target tier, and — critically — built on a **per-competitor deep-difference comparison classified into 5 competitor categories, not a head-count of names**, and expressed as a **multi-dimensional score with a decision uncertainty band (pessimistic–optimistic), not a false-precision single point**. Returns a tiered score, an explicit proceed/stop call, and a concrete pivot if the topic is dead.
 
 A naked evaluation tends to either flatter (cheerlead), judge from stale memory, silently apply the "paradigm-novelty" ruler to every goal, or — the two most common failures — **(a) see a list of same-keyword tools and declare the field "crowded" without checking what each one actually does, and (b) declare a method "novel" because it uses a different mathematical mechanism than a neighbor, while ignoring that it competes for the exact same task**. This skill turns it into a reliable, structured, currency-checked, tier-aware, **competitor-classified and range-scored** decision.
 
@@ -84,7 +84,9 @@ Rules for filling the table:
 ## Scoring — multi-dimensional, range-bounded, driven by the category analysis
 
 ### Why not a single 0–1 point
-A bare `0.62` vs `0.55` is **false precision** — it implies a measurement resolution the evidence does not support. Replace the single point with a **multi-dimensional score** (8 independent dimensions), each with its own confidence and evidence grade, and aggregate into a **plausible range**. The width of the range reflects how much of the score rests on low-confidence / inferred / guessed evidence.
+A bare `0.62` vs `0.55` is **false precision** — it implies a measurement resolution the evidence does not support. Replace the single point with a **multi-dimensional score** (8 independent dimensions), each with its own confidence and evidence grade, and aggregate into a **decision uncertainty band**. The width of the band reflects how much of the score rests on low-confidence / inferred / guessed evidence.
+
+> **Honest framing.** This band is a **decision uncertainty band, NOT a statistical confidence interval.** It has no coverage guarantees — it is a structured, deterministic way to propagate each dimension's per-dimension confidence into a low–high bracket for the decision. Do not call it a "confidence interval" or "95% CI"; it is not one.
 
 ### The 8 dimensions
 
@@ -101,20 +103,37 @@ A bare `0.62` vs `0.55` is **false precision** — it implies a measurement reso
 
 ### Per-dimension output
 For each dimension emit:
-- `score` — on a 0–1 scale (use 0.25 increments; finer granularity is false precision)
+- `score` — on a 0–1 scale (use 0.25 increments; finer granularity is false precision). This is the **base** value.
+- `pessimistic` — `clamp(score − d_i, 0, 1)`, the low end for this dimension (see deltas below)
+- `optimistic` — `clamp(score + d_i, 0, 1)`, the high end for this dimension
 - `confidence` — `low` / `med` / `high` (how sure are you of this score given the evidence)
 - `evidence_grade` — `A` (measured / tested against source) / `B` (inferred from related evidence) / `C` (guess / memory / unstated)
 - `blocking_issue` — boolean; true if a problem here is severe enough to stop the project regardless of total score
 - `unknowns` — short list of what you would need to know to raise confidence
 
-### Aggregation → total + plausible range
-- **Total** = weighted sum of the 8 dimension scores (0–1).
-- **Plausible range** = total ± a spread derived from the confidence profile:
-  - Start from the total.
-  - For each dimension weighted ≥10%, if `confidence=low` OR `evidence_grade=C`, widen the range by ±0.06 on that dimension's weighted contribution; if `med`/`B`, widen by ±0.03.
-  - Sum the widenings into a half-width; the range is `[max(0, total − half), min(1, total + half)]`.
-  - Report as e.g. `"estimated 0.58, plausible range 0.42–0.70"`.
-- The range is the honest statement. **Never report only the point.** If the range straddles a decision threshold, say so explicitly.
+The uncertainty delta `d_i` is **derived from `confidence` and `evidence_grade` together** by taking the worse (larger) of the two mappings — the conservative read, since either a low-confidence judgment or a C-grade evidence source can widen the uncertainty on its own:
+
+| `confidence` | delta | | `evidence_grade` | delta | | effective `d_i` |
+|---|---|---|---|---|---|---|
+| `high` | 0.02 | | `A` | 0.02 | | `max(0.02, 0.02) = 0.02` |
+| `med`  | 0.05 | | `B` | 0.05 | | `max(0.05, 0.05) = 0.05` |
+| `low`  | 0.10 | | `C` | 0.10 | | `max(0.10, 0.10) = 0.10` |
+
+(For a mixed case — e.g. `confidence=med` but `evidence_grade=C` — `d_i = max(0.05, 0.10) = 0.10`. The worse signal wins.)
+
+### Aggregation → total + decision uncertainty band
+For each dimension `i` with weight `w_i` and base score `s_i` (the per-dimension `score`), and uncertainty delta `d_i` from the table above:
+
+- `pessimistic_i = clamp(s_i − d_i, 0, 1)`
+- `optimistic_i  = clamp(s_i + d_i, 0, 1)`
+
+Then aggregate by literal weighted sum — both endpoints are computed, so the band **always closes by construction**:
+
+- **`viability_total`** (base) = `Σ w_i · s_i`
+- **`viability_range`** = `[ Σ w_i · pessimistic_i , Σ w_i · optimistic_i ]`
+
+- The band is the honest statement. **Never report only the point.** If the band straddles a decision threshold, say so explicitly.
+- Format the `viability_range` string as e.g. `"0.65–0.75 (decision uncertainty band: pessimistic–optimistic)"`.
 - **Any `blocking_issue=true` ⇒ hard flag**; the total may still be computed, but `should_proceed` is set to false until the block is resolved, regardless of the number.
 
 ## Required Output — all fields, none optional
@@ -127,20 +146,20 @@ For each dimension emit:
 | `paradigm_shift_status` | one sentence: where the field moved |
 | `critical_evidence` | concrete papers/arguments — real, cited, verified against source text |
 | `recommended_pivot` | specific alternative / improvable axis. NOT "try something else" |
-| `viability_dimensions` | the 8 per-dimension objects (score / confidence / evidence_grade / blocking_issue / unknowns) |
-| `viability_total` | weighted sum, 0–1 |
-| `viability_range` | plausible range derived from confidence profile, e.g. "0.42–0.70" |
+| `viability_dimensions` | the 8 per-dimension objects (score [base] / pessimistic / optimistic / confidence / evidence_grade / blocking_issue / unknowns) |
+| `viability_total` | weighted sum of the base scores, 0–1 |
+| `viability_range` | decision uncertainty band, formatted as e.g. `"0.65–0.75 (decision uncertainty band: pessimistic–optimistic)"` — NOT a statistical confidence interval |
 | `warning_flags` | specific concerns |
 | `should_proceed` | true ONLY if genuinely viable under that tier AND no dimension has blocking_issue=true |
 | `biggest_failure_risk` | the single most likely thing to sink it, even when proceeding |
 
-## Score → Decision (applied to the plausible range, not the point)
-Interpret the **range** against the tier's ruler:
-- **Range entirely ≥ 0.5** — viable under the tier; proceed; address `warning_flags`.
-- **Range straddles 0.5** — borderline: the call depends on resolving the low-confidence dimensions. Flag them; proceed only with a plan to raise their evidence_grade to A/B.
-- **Range entirely 0.3–0.5** — high risk under the tier: resolve flags or pivot.
-- **Range entirely < 0.3** — seriously doubtful under the tier.
-- **Range entirely < 0.15** — effectively dead, hard stop unless a concrete pivot is adopted.
+## Score → Decision (applied to the decision uncertainty band, not the point)
+Interpret the **band** (the `[pessimistic, optimistic]` bracket of `viability_range`) against the tier's ruler:
+- **Band entirely ≥ 0.5** — viable under the tier; proceed; address `warning_flags`.
+- **Band straddles 0.5** — borderline: the call depends on resolving the low-confidence dimensions. Flag them; proceed only with a plan to raise their evidence_grade to A/B.
+- **Band entirely 0.3–0.5** — high risk under the tier: resolve flags or pivot.
+- **Band entirely < 0.3** — seriously doubtful under the tier.
+- **Band entirely < 0.15** — effectively dead, hard stop unless a concrete pivot is adopted.
 
 These thresholds are strictest for T1. **For T2, a crowded keyword-space alone does NOT push you low** — only the absence of ANY improvable axis across the genuine functional substitutes (Category 1) does, and only if the naive baselines (Category 5) are not beaten by a defensible margin.
 
@@ -152,12 +171,12 @@ These thresholds are strictest for T1. **For T2, a crowded keyword-space alone d
 - **Input-slot (Category 3) is a real distinction for THIS user, but not the only axis.** Keep it; do not let it be the sole reason a competitor is "not a competitor."
 - **Benchmarkability must check the naive baseline (Category 5).** If your benchmark plan does not include the simplest methods in the space, benchmarkability scores low regardless of everything else.
 - **Functional differentiation must be argued against Category 1 (functional substitutes), not only against Category 2 (methodological neighbors).** Beating a neighbor is not enough; you must beat the substitute.
-- **Score must be multi-dimensional with per-dimension confidence + evidence_grade, and the total must carry a plausible range.** A single bare point like `0.62` is invalid — it is false precision.
+- **Score must be multi-dimensional with per-dimension confidence + evidence_grade, AND every dimension must carry its own `pessimistic`/`optimistic` triple (score − d_i, score, score + d_i, clamped), and the total must carry a decision uncertainty band derived from those triples.** A single bare point like `0.62` is invalid — it is false precision.
 - If `is_obsolete_or_flawed = true` → `recommended_pivot` MUST be non-empty and specific.
 - A score with no `critical_evidence` is invalid — every score needs a cited basis, and the crowdedness basis must come from the table's category column.
 - For any "is this current / obsolete" claim → **search first**, do not trust memory.
 - Any dimension with `blocking_issue=true` ⇒ `should_proceed=false` until resolved, even if the total looks fine.
-- Even when the range is entirely ≥ 0.5, state the single biggest thing that could make this fail.
+- Even when the band is entirely ≥ 0.5, state the single biggest thing that could make this fail.
 
 ## Red Flags — your assessment is probably invalid if:
 - **You judged "crowded" from competitor names or counts without generating the per-competitor deep-comparison table → invalid; rebuild the table and re-score.**
@@ -165,7 +184,8 @@ These thresholds are strictest for T1. **For T2, a crowded keyword-space alone d
 - **You classified every same-keyword tool as Category 1 without checking input/method/output slots → invalid; reclassify, some will be Category 2/3/4.**
 - **Your benchmark plan has no naive baseline (Category 5) → benchmarkability score invalid; add it.**
 - **You argued "different from STARNet (a methodological neighbor)" but never addressed the functional substitute (Category 1) → functional differentiation score invalid.**
-- **You reported a single bare viability point (e.g. `0.62`) with no per-dimension breakdown and no plausible range → false precision; redo as multi-dimensional with range.**
+- **You reported a single bare viability point (e.g. `0.62`) with no per-dimension breakdown and no pessimistic/optimistic triple per dimension → false precision; redo as multi-dimensional with a decision uncertainty band.**
+- **Reporting a single bare viability point with no pessimistic/optimistic per dimension → false precision; redo.** (The band endpoints must be the literal weighted sums of the per-dimension `pessimistic`/`optimistic` — if they are not recomputable from the per-dimension triples, the band is invalid.)
 - You scored without confirming the target tier → ask it first.
 - "Field is healthy" based only on memory → verify currency.
 - Encouragement with no risks/flags → cheerleading; redo as skeptic.
@@ -177,9 +197,9 @@ These thresholds are strictest for T1. **For T2, a crowded keyword-space alone d
 You are a **counsel, not a gatekeeper** — you do NOT veto. Once the target tier is set and viability is scored under it (with the competitor table and the multi-dimensional score attached):
 1. If viable under the tier → hand off directly.
 2. If low under the tier but the user wants to proceed → that is the user's call; just make it informed (see `_shared/research-design-handoff.md`). Options (informed door): (a) accept the tier's risk, (b) lock an improvable axis that survived the category analysis vs the functional substitutes (T2), or (c) supply info that changes a low-confidence dimension's score (e.g. new evidence that raises evidence_grade from C to A).
-3. Emit the handoff block (target_tier, verdict, total + range, the competitor_comparison_table with categories, the functional substitutes + their improvable axes, the naive baselines that must be beaten, the user's choice) so algorithm-design inherits the real competitive landscape — not a name list.
+3. Emit the handoff block (target_tier, verdict, total + decision uncertainty band, the competitor_comparison_table with categories, the functional substitutes + their improvable axes, the naive baselines that must be beaten, the user's choice) so algorithm-design inherits the real competitive landscape — not a name list.
 
-The user decides; your job is to ensure they decide **informed under the right ruler, against the category-classified competitor set, and with an honest range rather than a fake-precision point**, then carry the truth forward.
+The user decides; your job is to ensure they decide **informed under the right ruler, against the category-classified competitor set, and with an honest decision uncertainty band rather than a fake-precision point**, then carry the truth forward.
 
 ## Example — spaGRN-style spatial GRN from RNA-only data (the lesson case)
 ```
@@ -212,21 +232,22 @@ critical_evidence:
 
 recommended_pivot: none needed at the topic level — but lock the improvable axis: "the only RNA-only spatial method that recovers a cis-regulatory signal", AND mandate a fair benchmark vs ISON (Cat 1) + the co-accessibility naive baseline (Cat 5), not only vs ATAC-dependent tools.
 
-viability_dimensions:
-  1 biological_validity:    {score: 0.75, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["is cis signal recoverable from RNA alone at spot resolution?"]}
-  2 data_feasibility:       {score: 0.80, confidence: high, evidence_grade: A, blocking_issue: false, unknowns: []}
-  3 functional_differentiation: {score: 0.55, confidence: low,  evidence_grade: B, blocking_issue: false, unknowns: ["concrete delta vs ISON on a shared dataset", "whether the cis signal is real or co-accessibility in disguise"]}
-  4 benchmarkability:       {score: 0.60, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["ground-truth cis GRN for spatial RNA is scarce; leakage risk"]}
-  5 implementation_feasibility: {score: 0.75, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["training cost on full Stereo-seq slides"]}
-  6 reproducibility:        {score: 0.70, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["seed stability of cis edge recovery"]}
-  7 adoption_user_value:    {score: 0.70, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["whether RNA-only users currently fall back to SCENIC+ (Cat 4)"]}
-  8 ethics_privacy_licensing: {score: 0.90, confidence: high, evidence_grade: A, blocking_issue: false, unknowns: []}
+viability_dimensions:   (each carries a pessimistic / base / optimistic triple; d_i = max(confidence_delta, grade_delta))
+  #                                 score   pessimistic  optimistic  conf  grade  d_i   |  w       w·s      w·pess    w·opt
+  1 biological_validity:        { score: 0.75, pessimistic: 0.70, optimistic: 0.80, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["is cis signal recoverable from RNA alone at spot resolution?"] }   # d_i=0.05 | 0.20  → 0.1500  0.1400  0.1600
+  2 data_feasibility:           { score: 0.80, pessimistic: 0.78, optimistic: 0.82, confidence: high, evidence_grade: A, blocking_issue: false, unknowns: [] }                                                                                   # d_i=0.02 | 0.15  → 0.1200  0.1170  0.1230
+  3 functional_differentiation: { score: 0.55, pessimistic: 0.45, optimistic: 0.65, confidence: low,  evidence_grade: B, blocking_issue: false, unknowns: ["concrete delta vs ISON on a shared dataset", "whether the cis signal is real or co-accessibility in disguise"] }   # d_i=0.10 | 0.15  → 0.0825  0.0675  0.0975
+  4 benchmarkability:           { score: 0.60, pessimistic: 0.55, optimistic: 0.65, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["ground-truth cis GRN for spatial RNA is scarce; leakage risk"] }                  # d_i=0.05 | 0.15  → 0.0900  0.0825  0.0975
+  5 implementation_feasibility: { score: 0.75, pessimistic: 0.70, optimistic: 0.80, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["training cost on full Stereo-seq slides"] }                                       # d_i=0.05 | 0.10  → 0.0750  0.0700  0.0800
+  6 reproducibility:            { score: 0.70, pessimistic: 0.65, optimistic: 0.75, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["seed stability of cis edge recovery"] }                                              # d_i=0.05 | 0.10  → 0.0700  0.0650  0.0750
+  7 adoption_user_value:        { score: 0.70, pessimistic: 0.65, optimistic: 0.75, confidence: med,  evidence_grade: B, blocking_issue: false, unknowns: ["whether RNA-only users currently fall back to SCENIC+ (Cat 4)"] }                    # d_i=0.05 | 0.10  → 0.0700  0.0650  0.0750
+  8 ethics_privacy_licensing:   { score: 0.90, pessimistic: 0.88, optimistic: 0.92, confidence: high, evidence_grade: A, blocking_issue: false, unknowns: [] }                                                                                   # d_i=0.02 | 0.05  → 0.0450  0.0440  0.0460
 
-viability_total: 0.70   (0.20·0.75 + 0.15·0.80 + 0.15·0.55 + 0.15·0.60 + 0.10·0.75 + 0.10·0.70 + 0.10·0.70 + 0.05·0.90)
-viability_range: 0.56–0.84
-  (functional_differentiation is low/C at 15% weight → ±0.09; benchmarkability med/B at 15% → ±0.045;
-   biological_validity, implementation, reproducibility, adoption each med/B at ≥10% → ±0.03 each ≈ ±0.12;
-   total half-width ≈ 0.14 → range 0.56–0.84)
+viability_total: 0.7025   (Σ w·s = 0.1500 + 0.1200 + 0.0825 + 0.0900 + 0.0750 + 0.0700 + 0.0700 + 0.0450 = 0.7025)
+viability_range: 0.65–0.75 (decision uncertainty band: pessimistic–optimistic)
+  (pessimistic = Σ w·pess = 0.1400 + 0.1170 + 0.0675 + 0.0825 + 0.0700 + 0.0650 + 0.0650 + 0.0440 = 0.6510 → 0.65;
+   optimistic  = Σ w·opt  = 0.1600 + 0.1230 + 0.0975 + 0.0975 + 0.0800 + 0.0750 + 0.0750 + 0.0460 = 0.7540 → 0.75)
+  NOTE: this is a decision uncertainty band, NOT a statistical confidence interval — it has no coverage guarantees.
 
 warning_flags:
   - "must benchmark against ISON (Cat 1) and the co-accessibility naive baseline (Cat 5) — beating STARNet (Cat 3) is not enough"
@@ -236,7 +257,7 @@ warning_flags:
 should_proceed: true
 biggest_failure_risk: the cis signal is indistinguishable from plain co-accessibility (Cat 5 baseline) on the available benchmarks, collapsing functional differentiation and turning the method into a re-skin of the naive baseline.
 ```
-Note how this differs from a name-only read: "SpaGRN/STARNet/ISON all do spatial GRN" would wrongly declare the field crowded AND wrongly excuse SpaGRN/ISON as "different method". The category table shows only ISON is a true functional substitute (Cat 1), STARNet is a different input-slot (Cat 3), and the real swing factors are functional_differentiation (vs ISON) and benchmarkability (vs the co-accessibility naive baseline) — both low/medium confidence, hence a wide range rather than a fake-precision point.
+Note how this differs from a name-only read: "SpaGRN/STARNet/ISON all do spatial GRN" would wrongly declare the field crowded AND wrongly excuse SpaGRN/ISON as "different method". The category table shows only ISON is a true functional substitute (Cat 1), STARNet is a different input-slot (Cat 3), and the real swing factors are functional_differentiation (vs ISON) and benchmarkability (vs the co-accessibility naive baseline) — both low/medium confidence, hence a wide decision uncertainty band (0.65–0.75) rather than a fake-precision point.
 
 ## References
 - `_shared/research-design-handoff.md` — the viability→design contract; carry the competitor_comparison_table (with categories) forward so **crossbio-algo:algorithm-design**'s `novelty_basis` is checked against the genuine functional substitutes (Cat 1) and the naive baselines (Cat 5).

@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crossbio-algo/schemas/stage-schemas.json",
+  "title": "crossbio-algo stage artifact (machine-checkable, SINGLE SOURCE OF TRUTH)",
+  "description": "The one canonical schema for every stage's artifact.json. Per-stage stage_fields are enforced via oneOf over `stage` — a design artifact missing objective_or_likelihood FAILS validation here. This is the P0-2 fix: stage_fields no longer accepts arbitrary content. NOTE on the design stage: the human-readable design contract has 15 required + 2 optional = 17 fields (see algorithm-design SKILL), but the MACHINE payload (stage_fields below) carries only the 7 that participate in cross-stage validation; the other 10 are prose-only. Cross-stage CONTENT rules (estimand continuity, failure_boundary->acceptance, notation match, pseudocode->code, provenance) are enforced by the validator (artifact-validation.md); this schema enforces each stage's intra-stage structure plus the structural preconditions those rules need (failure_boundaries[].id, acceptance_criteria[].traces_to, provenance_hash pattern).",
+  "type": "object",
+  "required": ["artifact_id", "stage", "parent_artifact_id", "skill_version", "provenance_hash", "stage_fields"],
+  "properties": {
+    "artifact_id": {"type": "string", "description": "unique id, e.g. 'design-scout-001'"},
+    "parent_artifact_id": {"type": ["string", "null"], "description": "upstream artifact this derives from; null ONLY for the data-audit root"},
+    "skill_version": {"type": "string"},
+    "model": {"type": "string"},
+    "created_at": {"type": "string"},
+    "provenance_hash": {"type": "string", "pattern": "^[a-f0-9]{12}$", "description": "sha256(canonical_json(content))[:12]"},
+    "inputs": {"type": "object"},
+    "decision": {"type": "object"},
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "evidence": {"type": "array", "items": {"type": "string"}},
+    "unresolved_risks": {"type": "array", "items": {"type": "string"}},
+    "stage": {"enum": ["data-audit", "brainstorm", "viability", "design", "spec", "code", "audit"]}
+  },
+  "additionalProperties": true,
+  "oneOf": [
+    {"properties": {"stage": {"const": "data-audit"}, "stage_fields": {"$ref": "#/$defs/data_audit_fields"}}, "required": ["stage", "stage_fields"]},
+    {"properties": {"stage": {"const": "brainstorm"}, "stage_fields": {"$ref": "#/$defs/brainstorm_fields"}}, "required": ["stage", "stage_fields"]},
+    {"properties": {"stage": {"const": "viability"}, "stage_fields": {"$ref": "#/$defs/viability_fields"}}, "required": ["stage", "stage_fields"]},
+    {"properties": {"stage": {"const": "design"}, "stage_fields": {"$ref": "#/$defs/design_fields"}}, "required": ["stage", "stage_fields"]},
+    {"properties": {"stage": {"const": "spec"}, "stage_fields": {"$ref": "#/$defs/spec_fields"}}, "required": ["stage", "stage_fields"]},
+    {"properties": {"stage": {"const": "code"}, "stage_fields": {"$ref": "#/$defs/code_fields"}}, "required": ["stage", "stage_fields"]},
+    {"properties": {"stage": {"const": "audit"}, "stage_fields": {"$ref": "#/$defs/audit_fields"}}, "required": ["stage", "stage_fields"]}
+  ],
+  "$defs": {
+    "data_audit_fields": {
+      "description": "GATE root. estimand propagates to ALL downstream; fatal_issues non-empty = chain does not continue.",
+      "type": "object",
+      "required": ["biological_unit", "estimand", "fatal_issues", "cohort_structure", "leakage_graph", "split_strategy"],
+      "properties": {
+        "biological_unit": {"type": "string"},
+        "estimand": {"type": "string"},
+        "fatal_issues": {"type": "array", "items": {"type": "string"}},
+        "cohort_structure": {"type": "string"},
+        "leakage_graph": {"type": "string"},
+        "split_strategy": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "brainstorm_fields": {
+      "type": "object",
+      "required": ["candidates", "chosen_id"],
+      "properties": {
+        "candidates": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["title", "hypothesis", "gap", "novelty_locus"], "additionalProperties": true}},
+        "chosen_id": {"type": ["string", "integer"]}
+      },
+      "additionalProperties": true
+    },
+    "viability_fields": {
+      "type": "object",
+      "required": ["competitors_by_category", "viability_dimensions", "viability_total", "viability_range", "should_proceed"],
+      "properties": {
+        "competitors_by_category": {"type": "object"},
+        "viability_dimensions": {"type": "object"},
+        "viability_total": {"type": "number", "minimum": 0, "maximum": 1},
+        "viability_range": {"type": "string"},
+        "should_proceed": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
+    "design_fields": {
+      "description": "Machine payload = 7 of the 17 contract fields (the cross-stage-validated subset). objective_or_likelihood + identifiability REQUIRED here — vocabulary-only abstraction without them is invalid.",
+      "type": "object",
+      "required": ["problem_definition", "estimand", "notation_and_shapes", "objective_or_likelihood", "identifiability", "failure_boundaries", "complexity"],
+      "properties": {
+        "problem_definition": {"type": "string"},
+        "estimand": {"type": "string"},
+        "notation_and_shapes": {"type": "object"},
+        "objective_or_likelihood": {"type": "string"},
+        "identifiability": {"type": "string"},
+        "failure_boundaries": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}, "additionalProperties": true}},
+        "complexity": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "spec_fields": {
+      "description": "Every acceptance_criteria MUST carry traces_to (array of failure_boundary ids) — structural precondition for the no-orphan cross-stage rule.",
+      "type": "object",
+      "required": ["module_interfaces", "acceptance_criteria", "pseudocode_hashes"],
+      "properties": {
+        "module_interfaces": {"type": "object"},
+        "acceptance_criteria": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["traces_to"], "properties": {"traces_to": {"type": "array", "items": {"type": "string"}, "minItems": 1}}, "additionalProperties": true}},
+        "pseudocode_hashes": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "code_fields": {
+      "type": "object",
+      "required": ["module_hashes", "test_results", "acceptance_status"],
+      "properties": {
+        "module_hashes": {"type": "object"},
+        "test_results": {"type": "object"},
+        "acceptance_status": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "audit_fields": {
+      "type": "object",
+      "required": ["panel_findings", "verdict", "blocking"],
+      "properties": {
+        "panel_findings": {"type": "array", "items": {"type": "object"}},
+        "verdict": {"type": "string", "enum": ["pass", "needs_revision", "fail"]},
+        "blocking": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    }
+  }
+}

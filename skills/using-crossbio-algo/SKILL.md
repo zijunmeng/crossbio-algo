@@ -46,18 +46,18 @@ research-intake  (user has data + research question)
 - **Truth carries forward**: every handoff carries upstream truth (competitors, failure boundaries, target tier) — no stage restarts from a blank slate.
 
 ## Effort modes (Quick / Standard / Publication)
-The full loop (above) is the **Publication** mode — the complete closed loop. For many tasks that is overkill (a quick feasibility check or a T3 exercise does not need brainstorm + viability + multi-round audit). So the loop has three effort tiers. **State the effort mode out loud** when you start (the same way you state the mode), so the user knows the scope.
+The full loop (above) is the **Publication** mode — the complete closed loop. For many tasks that is overkill (a quick buildability check or a T3 exercise does not need brainstorm + viability + multi-round audit). So the loop has three effort tiers. **State the effort mode out loud** when you start (the same way you state the mode), so the user knows the scope.
 
-### Quick (~30 min — fast feasibility / practice)
+### Quick (~30 min — fast buildability / sanity check)
 Run: **data-and-estimand-audit** → **algorithm-design-lite** → basic tests. Skip brainstorm / viability / full spec / adversarial-panel-audit.
-- **algorithm-design-lite** = only the 4 load-bearing fields of the formal contract: `problem_definition`, `estimand`, `objective_or_likelihood`, `failure_boundaries`. (The full 16-field contract is NOT required here — see `algorithm-design` SKILL for the lite variant.)
+- **algorithm-design-lite** = only the 4 load-bearing fields of the formal contract: `problem_definition`, `estimand`, `objective_or_likelihood`, `failure_boundaries`. (The full formal method contract is NOT required here — see `algorithm-design` SKILL for the lite variant.)
 - The data-audit artifact is still produced (estimand must carry forward).
-- **Best for**: "is this idea even viable?", T3 learning, T4 internal one-off need, a single quick sanity check.
+- **Best for**: a fast buildability / sanity check (can this even be built & tested?), T3 learning, T4 internal one-off need. NOT a viability/competitor assessment — that needs at least Standard (viability requires the competitor deep-comparison, which Quick skips).
 
 ### Standard (~half day — the regular tool paper)
-Run: **data-and-estimand-audit** → **topic-viability-assessment** (deep-comparison table + multi-dim score) → **algorithm-design** (full formal 16-field contract) → **spec-writing** (kiro three-phase) → **1 round adversarial-panel-audit**.
+Run: **data-and-estimand-audit** → **topic-viability-assessment** (deep-comparison table + multi-dim score) → **algorithm-design** (full formal method contract) → **spec-writing** (kiro three-phase) → **1 round adversarial-panel-audit**.
 - Skip brainstorm (user already has the idea; viability scores that one idea).
-- **Best for**: T2 tool paper — the default mode for "build me a tool worth publishing."
+- **Best for**: T2 tool paper — the default mode for "build me a tool worth publishing." This is the **lightest mode that answers "is this idea worth doing?"** (competitor deep-comparison + viability score).
 
 ### Publication (~multiple days — full publication)
 Run the **full closed loop**: brainstorm (multiple ideas) → viability (full assessment) → **multi-round adversarial-panel-audit** → algorithm-design (formal) → spec-writing (kiro) → benchmark → Publication Roadmap.

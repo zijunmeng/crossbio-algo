@@ -4,7 +4,7 @@
 Markdown-only handoffs **drift**. Real example: SCOUT's design.md said `TruncatedSVD + svd.transform(np.eye(...))` (a dimension-mismatch bug), but scout.py silently switched to `np.linalg.svd` — the spec never constrained the code, and nobody caught it until expert review. **`artifact.json` makes each stage's output machine-checkable and defines cross-stage consistency rules that catch such drift automatically.**
 
 ## Per-stage artifact.json
-Each stage emits **`artifact.md`** (human-readable) **+ `artifact.json`** (machine-checkable, schema: `_shared/artifact-schema.json`).
+Each stage emits **`artifact.md`** (human-readable) **+ `artifact.json`** (machine-checkable, schema: `schemas/stage-schemas.json`).
 
 ### stage_fields (per stage, the structured payload)
 | stage | stage_fields (key) |
@@ -29,35 +29,32 @@ Each stage emits **`artifact.md`** (human-readable) **+ `artifact.json`** (machi
 
 5. **provenance_hash integrity**: `artifact.provenance_hash == sha256(canonical_json(content))[:12]`. Detects tampering or silent edits.
 
-## How to validate (pseudocode)
-```python
-import json, hashlib
-def h(obj): return hashlib.sha256(json.dumps(obj, sort_keys=True).encode()).hexdigest()[:12]
+## How to validate (IMPLEMENTED — was pseudocode in v0.2.0)
 
-def validate_chain(artifacts):  # artifacts: dict stage->artifact.json
-    # rule 5: provenance
-    for a in artifacts.values():
-        assert a["provenance_hash"] == h({k:v for k,v in a.items() if k!="provenance_hash"})
-    # rule 1: estimand continuity
-    if "design" in artifacts and "data-audit" in artifacts:
-        d_est = artifacts["design"]["stage_fields"]["estimand"]
-        a_est = artifacts["data-audit"]["stage_fields"]["estimand"]
-        assert d_est == a_est or artifacts["design"].get("estimand_change_justification"), \
-            f"estimand drift: data-audit={a_est} vs design={d_est}, no justification"
-    # rule 2: failure_boundary -> acceptance (no orphans)
-    if "design" in artifacts and "spec" in artifacts:
-        fbs = artifacts["design"]["stage_fields"]["failure_boundaries"]
-        acs = artifacts["spec"]["stage_fields"]["acceptance_criteria"]
-        for fb in fbs:
-            assert any(fb["id"] in ac.get("traces_to", []) for ac in acs), \
-                f"ORPHAN failure_boundary '{fb}' — no acceptance criterion tests it"
-    # rule 3: notation consistency
-    if "design" in artifacts and "spec" in artifacts:
-        d_not = artifacts["design"]["stage_fields"]["notation_and_shapes"]
-        s_iface = artifacts["spec"]["stage_fields"]["module_interfaces"]
-        assert shapes_match(d_not, s_iface), "notation drift: design shapes != spec interfaces"
-    return True
+These rules are no longer prose. They are enforced by **`crossbio_validate`** (Python, in this repo's `crossbio_validate/` package, tested in `tests/test_validator.py`):
+
+```bash
+crossbio validate-chain <dir>           # validate a dir of artifact.json as a chain
+crossbio validate <artifact.json>       # one artifact (schema + provenance only)
+crossbio validate-project <dir>         # scan a project dir for artifacts
+crossbio stamp <artifact.json>          # authoring helper: write the correct provenance_hash
+# or, without installing:  python -m crossbio_validate validate-chain <dir>
 ```
+
+`validate-chain` runs, for a chain: every artifact against `schemas/stage-schemas.json` (intra-stage) + provenance integrity + parent-chain integrity + stage-order + the fatal GATE + the 5 cross-stage rules below. It exits non-zero on any ERROR.
+
+The rule logic (spec — the live code is `crossbio_validate/core.py`):
+```python
+# rule 5 (provenance): a["provenance_hash"] == sha256(canonical_json({k:v for k,v in a if k!="provenance_hash"}))[:12]
+# rule 1 (estimand continuity): design.estimand == data-audit.estimand OR design has estimand_change_justification
+# rule 2 (no orphans): for each fb in design.failure_boundaries: exists ac in spec.acceptance_criteria with fb.id in ac.traces_to
+# rule 3 (notation consistency): every shape in spec.module_interfaces is declared in design.notation_and_shapes.shapes
+#                                  (free-form notation -> WARNING + skip, not a false ERROR)
+# rule 4 (pseudocode -> code): for each module in spec.pseudocode_hashes: module in code.module_hashes OR module in code.divergence
+# also enforced: parent_artifact_id resolves; stage order follows ALLOWED_PARENT_STAGES; fatal_issues non-empty + downstream present => risk_accepted required
+```
+
+The drift this catches is real and tested: see `tests/test_validator.py` — each rule has a GREEN case and a deliberately-drifted RED case that MUST fail (estimand drift, orphan failure_boundary, notation mismatch, pseudocode orphan, provenance tamper, dangling parent, stage-order break, fatal-gate violation).
 
 ## Integration into the loop
 - **handoff contract** (`research-design-handoff.md`): each stage MUST emit `artifact.json` (not just `.md`); downstream stage MUST validate cross-stage rules before proceeding.

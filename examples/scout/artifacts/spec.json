@@ -1,0 +1,75 @@
+{
+  "artifact_id": "scout-spec",
+  "stage": "spec",
+  "parent_artifact_id": "scout-design",
+  "skill_version": "0.2.1",
+  "stage_fields": {
+    "module_interfaces": {
+      "pair_map": {
+        "out": {
+          "name": "fit.Z",
+          "shape": "n×k"
+        }
+      },
+      "project": {
+        "out": {
+          "name": "spatial_Z",
+          "shape": "m×k"
+        },
+        "flag": {
+          "name": "low_confidence"
+        }
+      },
+      "impute": {
+        "out": {
+          "name": "atac_hat",
+          "shape": "m×g_atac"
+        }
+      }
+    },
+    "acceptance_criteria": [
+      {
+        "id": "ac-fb1",
+        "traces_to": [
+          "fb1"
+        ],
+        "spec": "out-of-manifold spots (nearest paired cell > 3x cloud spacing) SHALL be flagged low_confidence"
+      },
+      {
+        "id": "ac-fb2",
+        "traces_to": [
+          "fb2"
+        ],
+        "spec": "spots with reads < threshold SHALL be flagged low_confidence AND still receive a fallback latent"
+      },
+      {
+        "id": "ac-fb3",
+        "traces_to": [
+          "fb3"
+        ],
+        "spec": "weak-pairing sweep (pairing_strength -> 0) SHALL drive ATAC recovery toward the naive baseline"
+      },
+      {
+        "id": "ac-fb4",
+        "traces_to": [
+          "fb4"
+        ],
+        "spec": "documented limitation: batch shift not modeled; flagged in Publication Roadmap"
+      },
+      {
+        "id": "ac-bench",
+        "traces_to": [
+          "fb1",
+          "fb3"
+        ],
+        "spec": "on semi-synthetic in-manifold data, SCOUT per-peak ATAC recovery SHALL exceed mean-impute and zero baselines"
+      }
+    ],
+    "pseudocode_hashes": {
+      "pair_map": "sha256:pls-svd-centered",
+      "project": "sha256:sinkhorn-ot",
+      "impute": "sha256:z-batac"
+    }
+  },
+  "provenance_hash": "a0912b6e5641"
+}

@@ -1,69 +1,67 @@
-# SCOUT — Design
+# SCOUT — Design (v0.2.1, PLS + entropic OT)
 
-## Module Breakdown (typed interfaces)
-| 模块 | 职责 | 输入 | 输出 |
+> The machine-checkable payload of this design is in `artifacts/design.json` (validated by
+> `crossbio validate-chain examples/scout/artifacts`). This file is the human-readable full
+> formal-method contract (15 required + 2 optional fields). v0.2.0 said "CCA-via-SVD" and shipped
+> `TruncatedSVD`; v0.2.1 unifies to **PLS** (centered cross-covariance SVD) + **optimal transport**
+> (Sinkhorn) with ONE cross-modal coefficient `B_atac` used by `impute` and the reconstruction check.
+
+## Model in one sentence
+Paired factors by **PLS** (SVD of the centered RNA-ATAC cross-covariance) + spatial projection by
+**entropic optimal transport** (Sinkhorn) into the paired latent; spatial ATAC = projected latent · `B_atac`.
+
+## Module breakdown (typed interfaces)
+| module | responsibility | in | out |
 |---|---|---|---|
-| `scout.pair_map` | scMultiome 学 RNA-ATAC 配对潜在 | `multi_adata` (AnnData, `.X`=RNA, `.obsm['ATAC']`) | `Z_pair` (np.float32 [n_cells,k]), `W_rna`, `W_atac` |
-| `scout.project` | 空间 RNA → 投射到配对潜在 + 置信度 | `spatial_adata` (`.X`=RNA, `.obsm['spatial']`), `Z_pair`, `multi_adata.X` | `spatial_Z` ([n_spatial,k]), `project_confidence` ([n_spatial]) |
-| `scout.impute` | 推断空间 ATAC + 联合状态 | `spatial_Z`, `W_atac` | `spatial_adata.obsm['ATAC_imputed']` ([n_spatial, n_peaks]) |
-| `scout.spatial` | 空间可视化 | `spatial_adata`, `ATAC_imputed` | Moran's I, 空间图 |
-| `scout.sim` | semi-synthetic + downsample + benchmark | params | truth + metrics |
+| `scout.pair_map` | learn paired RNA-ATAC latent (PLS) | `multi_adata.X` (RNA n×g_rna), `multi_adata.obsm['ATAC']` (n×g_atac) | `ScoutFit` (.Z n×k, .U g_rna×k, .V g_atac×k, .B_atac k×g_atac, .svals k) |
+| `scout.project` | spatial RNA → paired latent via OT + confidence | `fit`, `spatial_adata.X` (m×g_rna) | `spatial_Z` (m×k), `confidence` (m), `low_confidence` (m, bool) |
+| `scout.impute` | infer spatial ATAC (the ONE cross-modal map) | `spatial_Z`, `fit.B_atac` | `atac_hat` (m×g_atac) |
+| `scout.simulate` / `benchmark` / `downsample_curve` | semi-synthetic DGP + AC checks | params | metrics |
 
-## Data Flow
+## Data flow
 ```
-multi_adata.X(RNA) + multi_adata.obsm['ATAC']
-  → pair_map → Z_pair + W_rna/W_atac
-  → project (← spatial_adata.X) → spatial_Z + project_confidence
-  → impute → spatial_adata.obsm['ATAC_imputed']
-  → spatial (squidpy)
-```
-字段：`spatial_adata.obsm['spatial']`=xy; `.obs['project_confidence']`; `.obs['low_confidence']`; `.obsm['ATAC_imputed']`; `.uns['scout_metrics']`.
-
-## Pseudocode (API-call level — no high-level verbs)
-
-### scout.pair_map.fit (配对潜在, CCA-via-SVD)
-```python
-import numpy as np
-def fit(multi_adata, k=30):
-    X_rna = np.asarray(multi_adata.X, dtype=float)        # [n, g_rna]
-    X_atac = np.asarray(multi_adata.obsm['ATAC'], dtype=float)  # [n, g_atac]
-    C = (X_rna.T @ X_atac) / X_rna.shape[0]               # cross-covariance [g_rna, g_atac]
-    U, S, Vt = np.linalg.svd(C, full_matrices=False)      # C = U @ diag(S) @ Vt
-    U, Vt = U[:, :k], Vt[:k, :]                           # 截断到 top-k
-    W_rna = U                                             # RNA 侧映射 [g_rna, k]
-    W_atac = Vt.T                                         # ATAC 侧映射 [g_atac, k]
-    Z_pair = X_rna @ W_rna                                # 配对潜在 [n, k]
-    return Z_pair, W_rna, W_atac
+multi_adata.X(RNA) + .obsm['ATAC']
+  → pair_map  →  ScoutFit{Z, U, V, B_atac, svals}        (PLS: centered cross-covariance SVD + lstsq B_atac)
+spatial_adata.X(RNA)
+  → project(fit, spatial) → spatial_Z + confidence + low_confidence   (entropic OT / Sinkhorn, out-of-manifold detection)
+  → impute(spatial_Z, fit) → atac_hat = spatial_Z @ B_atac            (ONE map; same as the reconstruction check)
 ```
 
-### scout.project.fit (空间投射 + 置信度, AC-1)
-```python
-from sklearn.neighbors import NearestNeighbors
-def project(spatial_adata, Z_pair, multi_X, k_neighbors=15):
-    nn = NearestNeighbors(n_neighbors=k_neighbors).fit(multi_X)
-    dist, idx = nn.kneighbors(spatial_adata.X)
-    weights = np.exp(-dist / dist.mean(axis=1, keepdims=True))   # 软加权
-    spatial_Z = np.einsum('nk,nkd->nd', weights, Z_pair[idx]) / weights.sum(1, keepdims=True)
-    # 置信度 = 邻域 Z 的一致性 (异质→低, AC-1)
-    neigh_std = Z_pair[idx].std(axis=1).mean(axis=1)
-    project_confidence = 1.0 / (1.0 + neigh_std)
-    return spatial_Z, project_confidence
-```
+## Group P — Problem
+- `problem_definition`: from paired scMultiome (RNA+ATAC) + spatial RNA (no ATAC), infer spatial ATAC via a shared paired latent; CPU-only.
+- `estimand`: the unobserved spatial ATAC accessibility at each spot, recovered through the paired shared latent.
 
-### scout.impute
-```python
-def impute(spatial_Z, W_atac):
-    return spatial_Z @ W_atac.T                 # [n_spatial,k] @ [k,g_atac] → ATAC
-```
+## Group F — Formalization
+- `mathematical_abstraction`: masked cross-modal factor recovery + distribution alignment (OT). (rejected: a deep generative VAE — needs GPU, opaque failure mode.)
+- `notation_and_shapes`: `X_rna∈R^{n×g_rna}`, `X_atac∈R^{n×g_atac}`, `X_s∈R^{m×g_rna}` spatial RNA; centered → `Xr, Xa`; `C=XrᵀXa/n`; SVD `C=U diag(S) Vᵀ`; `Z=XrU` (n×k); `B_atac=lstsq(Z,Xa)` (k×g_atac); spatial latent coords `φ_s=(X_s−mean_rna)U`, `φ_p=Z`; transport plan `P` (m×n); `spatial_Z` (m×k); `atac_hat` (m×g_atac).
+- `assumptions`: paired cells share latent Z with linear RNA/ATAC loadings; spatial spots are mixtures alignable to the paired manifold by OT; counts overdispersed (narrative; the demo DGP is Gaussian-linear).
+- `objective_or_likelihood`: PLS `max tr(Uᵀ C V)` over orthonormal U,V (⇒ SVD of C); `B_atac = argmin‖Xa−ZB‖²`; spatial projection `min⟨P,M⟩+ε·KL(P‖ab)` (Sinkhorn), `M`=squared cost between `φ_s` and `φ_p`.
+- `identifiability`: spatial ATAC is **not** directly identifiable (no spatial ATAC observed). Identifiable only via the shared latent + the OT-alignment assumption; fails when the spatial manifold does not overlap the paired manifold (fb1) or pairing is weak (fb3).
+
+## Group A — Algorithm
+- `cross_domain_inspiration`: PLS (chemometrics) for paired factors; entropic OT (economics/transport) for cross-domain alignment. Both mature; the utility locus is the CPU-only, transparent combination + explicit failure boundaries (not new math).
+- `proposed_algorithm`: (1) center X_rna, X_atac; (2) `C=XrᵀXa/n`, SVD→U,S,V (truncate k); (3) `Z=XrU`; (4) `B_atac=lstsq(Z,Xa)`; (5) for spatial: `φ_s=(X_s−mean_rna)U`; detect out-of-manifold spots (nearest paired > 3× cloud spacing); (6) Sinkhorn on in-manifold spots → `P`; barycentric `spatial_Z=(P@Z)/rowsum(P)`; (7) `atac_hat=spatial_Z@B_atac`; (8) confidence from transport entropy, `low_confidence` from reads<threshold | out-of-manifold | high entropy.
+- `optimization_or_inference`: SVD (closed-form) + least-squares (closed-form) + Sinkhorn fixed-point iterations (converges for entropic OT; `n_iter=200`). Production: `ot.sinkhorn` (POT), mini-batch over m.
+- `complexity`: pair_map SVD `O(min(g,n)²·max)` + lstsq `O(nk²)`; project Sinkhorn `O(n_iter·m_in·n)` (mini-batch over m for scale); CPU-feasible to ~100k spots with mini-batch.
+
+## Group G — Guarantees
+- `failure_boundaries`: **fb1** out-of-manifold spatial (transport spreads/collapses → fallback to mean latent, flagged); **fb2** reads<threshold (sparse RNA, flagged); **fb3** weak pairing/small svals (latent carries little ATAC info); **fb4** batch shift (OT aligns batch, not biology — documented limitation).
+- `uncertainty_and_calibration` *(encouraged)*: per-spot `confidence∈[0,1]` from transport entropy (relative, not coverage-calibrated); `low_confidence` boolean.
+- `invariances` *(encouraged)*: not scale-invariant (centering + cross-covariance depend on units); permutation-invariant in cell/spot and gene/peak index.
+
+## Group V — Validation
+- `simulation_dgp`: shared Z → paired RNA+ATAC (linear loadings); spatial cells = copies of paired Z (in-manifold) + shifted draws (out-of-manifold, fb1); `pairing_strength→0` (fb3); Poisson downsample of spatial reads (fb2). Includes null (random spatial), oracle (true latent), trivial (mean/zero baselines).
+- `benchmark_protocol`: per-peak Pearson(imputed, ATAC_true) for SCOUT vs **mean-impute** and **zero** (the naive baselines a fair benchmark MUST include). SCGLUE/ISON: documented external harness (run them separately, feed imputed matrices to `_perpeak_corr`) — not bundled (heavy DL, GPU).
+- `novelty_or_utility_basis`: **T2** — CPU-only PLS+OT combination with explicit failure boundaries + low_confidence; delta vs SCGLUE (no DL/GPU, transparent), vs ISON (cross-modal factor + OT vs co-expression). NOT T1: PLS+OT are mature methods; the contribution is the rigorous combination + boundary analysis.
 
 ## Dependencies
-`scanpy>=1.10`, `squidpy>=1.4`, `scikit-learn>=1.4` (NearestNeighbors), `numpy>=1.26` (`np.linalg.svd` for pair_map), `scipy>=1.11`, `anndata>=0.10`, `POT>=0.9` (sinkhorn, 可选 OT 精化).
+`numpy>=1.26` (SVD, lstsq, Sinkhorn), `scikit-learn>=1.4` (optional NearestNeighbors fallback). Production OT: `POT>=0.9`. No AnnData hard-depend (uses a `_AD` substitute so the example runs dep-light).
 
-## Engineering Constraints
-全 CPU (无 GPU, 禁 torch 训练); mini-batch OT (batch=4096) 扛百万像素; scanpy/squidpy 生态; `random_state=0` 固定可复现; 记录 db/数据版本。
+## Engineering constraints
+CPU-only (no GPU); `numpy.random.default_rng(seed)` for reproducibility; deterministic given seed. Mini-batch Sinkhorn for >100k spots.
 
 ## Publication Roadmap
-- **MVP scope**: pair_map + project + impute 在 semi-synthetic 跑通 (核心创新 + 失效②③验证)。
-- **Engineering gap**: 真 scMultiome 接驳 / OT sinkhorn 调参 / CI+Docker (3 人天, P0)。
-- **Experiment gap**: benchmark vs SCGLUE/ISON / downsample 失效曲线 / 真实胎脑 Stereo-seq (5 人天, P0)。
-- **Writing gap**: intro (vs SCGLUE unpaired / SpatialGlue GPU) / methods (配对-投射数学) / results (适用边界图) (4 人天, P1)。
+- **MVP scope** (this example): pair_map + project + impute on semi-synthetic, all 4 failure_boundaries tested, benchmark beats naive baselines (scout≈0.97 vs ≈0). Artifact chain machine-validated.
+- **Engineering gap**: POT `ot.sinkhorn` for >100k / real scMultiome ingestion / Docker+CI (3d, P0).
+- **Experiment gap**: real SCGLUE/ISON benchmark on shared semi-synthetic + real fetal-brain Stereo-seq; coupling-sweep & manifold-overlap figures (5d, P0).
+- **Writing gap**: intro (vs SCGLUE/ISON), methods (PLS+OT math, identifiability), results (applicability-boundary figure fb1–fb4) (4d, P1).

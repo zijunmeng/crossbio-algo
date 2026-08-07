@@ -1,66 +1,45 @@
-# SCOUT — Tasks (bite-sized TDD)
+# SCOUT — Tasks (bite-sized TDD, v0.2.1)
 
-**Goal**: SCOUT MVP — 配对-投射整合, 推断空间 ATAC。
-**Architecture**: scMultiome 配对先验 → 投射空间 RNA → 推断空间 ATAC。
-**Tech Stack**: scanpy / scikit-learn / POT, 全 CPU。
-
----
-
-### Task 1: `scout.pair_map` (配对潜在推断)
-**Files:** Create `src/scout/pair_map.py`, `tests/test_pair_map.py`
-
-- [ ] **Step 1: Write the failing test**
-```python
-# tests/test_pair_map.py
-import numpy as np
-from anndata import AnnData
-from scout import pair_map
-
-def test_pair_map_recovers_known_latent():
-    rng = np.random.default_rng(0)
-    Z = rng.normal(size=(500, 5))                 # 已知真值潜在
-    W_rna = rng.normal(size=(5, 20)); W_atac = rng.normal(size=(30, 5))
-    adata = AnnData(X=(Z @ W_rna).astype('float32'))
-    adata.obsm['ATAC'] = (Z @ W_atac.T).astype('float32')
-    Z_hat, _, _ = pair_map.fit(adata, k=5)
-    assert Z_hat.shape == (500, 5)
-    from scipy.linalg import orthogonal_procrustes      # 容许符号/旋转
-    R, _ = orthogonal_procrustes(Z_hat, Z)
-    assert np.allclose(Z_hat @ R, Z, atol=0.15)
-```
-- [ ] **Step 2: Run test, verify FAIL** — `pytest tests/test_pair_map.py -v` → FAIL "No module named 'scout'"
-- [ ] **Step 3: Minimal implementation** — `pair_map.fit` 用 TruncatedSVD on cross-covariance (见 design.md 伪代码)
-- [ ] **Step 4: Run test, verify PASS** — `pytest tests/test_pair_map.py -v` → PASS
-- [ ] **Step 5: Commit** — `git commit -m "feat: scout.pair_map 配对潜在推断"`
-
-### Task 2: `scout.project` (空间投射 + 置信度, ← AC-1)
-**Files:** Create `src/scout/project.py`, `tests/test_project.py`
-- [ ] **Step 1: Write failing test (trace AC-1)**
-```python
-def test_confidence_drops_in_heterogeneous_region():
-    # 同质邻域(同 Z) → 高置信; 异质邻域(混 Z) → 低置信
-    Z_pair_homogeneous = np.zeros((100, 5))       # 全同 → std=0 → 高置信
-    Z_pair_hetero = np.random.default_rng(1).normal(size=(100, 5))  # 混 → std大 → 低置信
-    ...
-    assert confidence_hetero < confidence_homogeneous
-```
-- [ ] **Step 2:** Run → FAIL | **Step 3:** 实现 (最近邻 + 软加权 + std 置信度, design 伪代码) | **Step 4:** Run → PASS | **Step 5:** commit
-
-### Task 3: `scout.impute` + benchmark (← AC-4)
-**Files:** Create `src/scout/impute.py`, `tests/test_impute.py`
-- [ ] **Step 1:** Write failing test — semi-synthetic: 已知空间 ATAC 真值, 验证 `impute` 恢复 AUROC > 0.7
-- [ ] **Step 2-5:** Run→FAIL / 实现 (`spatial_Z @ W_atac.T`) / Run→PASS / commit
-
-### Task 4: simulation harness — downsample 失效曲线 (← AC-2, simulation_plan)
-**Files:** Create `src/scout/sim.py`
-- [ ] **Step 1:** Write failing test — downsample reads 100→50→10→5, `project_confidence` 应随稀疏单调下降 (验证 AC-2 邻域借用生效)
-- [ ] **Step 2-5:** Run→FAIL / 实现 (合成配对+空间, downsample, 跑 project) / Run→PASS / commit
+**Goal**: SCOUT MVP — paired-projection spatial multimodal integration (PLS + entropic OT), infer spatial ATAC.
+**Architecture**: paired factors (PLS) → spatial projection (OT) → ATAC imputation (ONE cross-modal `B_atac`).
+**Tech stack**: numpy (SVD, lstsq, Sinkhorn); CPU-only. Run: `cd examples/scout && PYTHONPATH=. python -m pytest test_scout.py -v`.
 
 ---
 
-## Self-Review (跑完检查)
-- ✅ 每模块有 typed interface + 测试 (pair_map/project/impute/sim)。
-- ✅ 每个 `simulation_plan` case (downsample) 是 Task 4 测试。
-- ✅ AC-1 (Task 2) / AC-2 (Task 4) / AC-4 (Task 3) 有对应 task; AC-3 (规模) 在 benchmark 阶段测。
-- ✅ 每步真实代码, 无 placeholder (TBD/TODO/"add error handling" 均无)。
-- ✅ 类型一致: `Z_pair`/`W_rna`/`W_atac`/`spatial_Z` 跨 task 命名一致。
+### Task 1: `scout.pair_map` — paired latent via PLS (centered cross-covariance SVD)
+**Files:** `examples/scout/scout.py` (`pair_map`, `ScoutFit`), `test_scout.py`
+- [ ] **Step 1 — failing test**: `test_pair_map_recovers_shared_subspace` (PLS latent recovers the shared Z subspace, alignment > 0.8) + `test_pair_map_is_pls_not_uncentered_MUTATION` (robust to a +50 offset because it CENTERS) + `test_pair_map_cross_modal_prediction_MUTATION` (the ONE `B_atac` reconstructs ATAC > 0.5; random `B_atac` ≈ 0).
+- [ ] **Step 2 — run, verify FAIL** (ModuleNotFoundError / assertion).
+- [ ] **Step 3 — implement**: center X_rna/X_atac; `C=XrᵀXa/n`; `np.linalg.svd`; truncate k; `Z=XrU`; `B_atac=np.linalg.lstsq(Z, Xa)`. Return `ScoutFit`.
+- [ ] **Step 4 — run, verify PASS**. [ ] **Step 5 — commit**.
+
+### Task 2: `scout.project` — spatial RNA → paired latent via entropic OT + confidence
+**Files:** `scout.py` (`_sqdist`, `_sinkhorn`, `project`), `test_scout.py`
+- [ ] **Step 1 — failing test**: `test_ot_projects_inmanifold_end_to_end_MUTATION` (in-manifold → imputed ATAC correlates with truth > 0.5; random transport worse) + `test_low_confidence_low_reads_AC2` (reads<threshold flagged) + `test_low_confidence_out_of_manifold_AC1` (out-of-manifold flagged).
+- [ ] **Step 2 — run, FAIL**. [ ] **Step 3 — implement**: `phi_s=(X_s−mean_rna)U`; detect out-of-manifold (nearest paired > 3× cloud spacing); Sinkhorn on in-manifold rows; barycentric `spatial_Z=(P@Z)/rowsum(P)`; entropy→confidence; `low_confidence = reads<thr | far | high-entropy`.
+- [ ] **Step 4 — PASS**. [ ] **Step 5 — commit**.
+
+### Task 3: `scout.impute` — the ONE cross-modal map (P0-4)
+**Files:** `scout.py` (`impute`), `test_scout.py`
+- [ ] **Step 1 — failing test**: `test_impute_uses_one_B_atac` (`impute(Zs, fit) == Zs @ fit.B_atac`).
+- [ ] **Step 2 — FAIL**. [ ] **Step 3 — implement**: `return spatial_Z @ fit.B_atac`.
+- [ ] **Step 4 — PASS**. [ ] **Step 5 — commit**.
+
+### Task 4: simulation + benchmark + downsample failure curve
+**Files:** `scout.py` (`simulate`, `_perpeak_corr`, `benchmark`, `downsample_curve`), `test_scout.py`
+- [ ] **Step 1 — failing test**: `test_benchmark_beats_naive_AC4` (scout > mean-impute > zero) + `test_downsample_drift_and_lowconfidence_grow_AC2` (drift & low_confidence fraction grow as reads drop).
+- [ ] **Step 2 — FAIL**. [ ] **Step 3 — implement**: DGP (shared Z, in/out-manifold spatial, pairing_strength, Poisson downsample); per-peak corr; benchmark vs mean/zero; downsample curve.
+- [ ] **Step 4 — PASS**. [ ] **Step 5 — commit**.
+
+### Task 5: artifact chain (machine-checkable handoff)
+**Files:** `examples/scout/artifacts/{data-audit,design,spec,code}.json`
+- [ ] Build the 4 stamped artifacts (estimand continuous, every fb traced by an AC, notation consistent, pseudocode→code).
+- [ ] `crossbio validate-chain examples/scout/artifacts` → **VALID, 0 findings**.
+
+---
+
+## Self-review
+- ✅ Each module has a typed interface + a mutation-discriminating test.
+- ✅ Every `failure_boundary` (fb1–fb4) has a matching acceptance criterion (no orphans — also machine-checked in `artifacts/spec.json`).
+- ✅ P0-4: one `B_atac` used by `impute` AND the reconstruction check (`test_impute_uses_one_B_atac`, `test_pair_map_cross_modal_prediction_MUTATION`).
+- ✅ No placeholders; no over-claimed ACs (scaling & SCGLUE/ISON moved to Roadmap).

@@ -1,6 +1,6 @@
 ---
 name: spec-writing
-description: Use when an algorithm-design 6-field output exists and the next step is turning it into engineering specs before writing code. Use when the user says "帮我写 spec / PRD / 实现方案 / 技术文档 / requirements / design / tasks" or needs requirements.md / design.md / tasks.md artifacts. Use when bridging a research-idea (hypothesis/novelty) into executable engineering specs.
+description: Use when an algorithm-design formal-method-contract output exists and the next step is turning it into engineering specs before writing code. Use when the user says "帮我写 spec / PRD / 实现方案 / 技术文档 / requirements / design / tasks" or needs requirements.md / design.md / tasks.md artifacts. Use when bridging a research-idea (hypothesis/novelty) into executable engineering specs.
 ---
 
 # Spec Writing
@@ -16,13 +16,18 @@ It borrows two mature paradigms rather than inventing its own 8-part stew:
 
 Position in the loop:
 ```
-algorithm-design (6 fields)  →  spec-writing (this skill: 3 artifacts)  →  code → publish
+algorithm-design (formal method contract)  →  spec-writing (this skill: 3 artifacts)  →  code → publish
 ```
 
 ## Input
 
-The 6 fields from **crossbio-algo:algorithm-design**:
-`mathematical_abstraction` / `cross_domain_inspiration` / `proposed_algorithm` / `failure_boundary` / `simulation_plan` / `novelty_basis`.
+spec-writing consumes the design's **formal method contract** (canonical schema: `schemas/stage-schemas.json`). The load-bearing fields for the spec translation:
+- `proposed_algorithm` → module breakdown
+- `failure_boundaries` → acceptance criteria (each `traces_to` a boundary)
+- `notation_and_shapes` → module interfaces (shapes must match — cross-stage rule 3)
+- `simulation_dgp` → test cases (every DGP regime becomes a test)
+- `optimization_or_inference` / `complexity` → engineering constraints
+- `novelty_or_utility_basis` → Publication Roadmap
 
 ## Output — three artifacts, all mandatory, sequential
 
@@ -121,17 +126,17 @@ Specs that stop at "write the algorithm + `scanpy>=1.10`" are not engineering-re
 - [ ] No FORBID phrases anywhere: "做一个X", "用合适的参数", "做聚类", "用合适的模型", "TBD", "TODO", "implement later", "add error handling", "handle edge cases", "use a suitable method".
 
 ## Artifact output
-In addition to the three kiro artifacts above (human-readable), this stage emits **`artifact.json`** (schema: `_shared/artifact-schema.json`): `stage_fields = {module_interfaces, acceptance_criteria (each traces_to a design failure_boundary), pseudocode_hashes}`.
+In addition to the three kiro artifacts above (human-readable), this stage emits **`artifact.json`** (schema: `schemas/stage-schemas.json`): `stage_fields = {module_interfaces, acceptance_criteria (each traces_to a design failure_boundary), pseudocode_hashes}`.
 Three cross-stage rules apply (`_shared/artifact-validation.md`):
 - **rule 2 (no orphans)** — every `design.failure_boundaries` item MUST have ≥1 matching `acceptance_criteria` whose `traces_to` names it (machine-checked, not just the trace table above).
 - **rule 3 (notation consistency)** — `module_interfaces` shapes/names MUST == `design.notation_and_shapes` (catches design→spec divergence).
 - **rule 4 (pseudocode → code)** — each pseudocode block has a content hash in `pseudocode_hashes`; the implemented code MUST match, or any divergence is recorded with justification.
 
 ## References
-- **crossbio-algo:algorithm-design** — the 6-field input this skill consumes.
+- **crossbio-algo:algorithm-design** — the formal-method-contract input this skill consumes.
 - Kiro spec-driven development — Requirements → Design → Tasks three-phase workflow (kiro.dev/docs/specs).
 - superpowers:writing-plans — bite-sized TDD task granularity, no-placeholders rule, self-review.
-- `_shared/artifact-schema.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits.
+- `schemas/stage-schemas.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits.
 
 ## Example — three-artifact excerpt (graph-wavelet imputation, **single-cell domain example**)
 

@@ -18,9 +18,9 @@ research-intake  (user has data + research question)
   → brainstorm  (N candidate ideas)
   → topic-viability  (score each under target tier; pick)
       ★ adversarial-panel-audit  (adversarial review of the assessment)
-  → algorithm-design  (6-field design, under competitor constraint)
+  → algorithm-design  (formal-method-contract design, under competitor constraint)
       ★ adversarial-panel-audit  (adversarial review of the design)
-  → spec-writing  (executable engineering spec from the 6 fields)
+  → spec-writing  (executable engineering spec from the design contract)
       ★ adversarial-panel-audit  (adversarial review of the spec)
   → code / execution
       ★ adversarial-panel-audit  (adversarial review of results)
@@ -29,12 +29,12 @@ adversarial-panel-audit is **horizontal** — it fires at EACH ★ before the ar
 data-and-estimand-audit is a **GATE** — it runs once, before brainstorm, and blocks the loop on fatal issues.
 
 ## Effort Modes (Quick / Standard / Publication)
-The full loop above is **Publication** mode. Not every task needs the full closed loop — a quick feasibility check or a T3 exercise doesn't earn back the cost of brainstorm + viability + multi-round audit. So there are three effort tiers. **State the effort mode out loud** at the start of a run.
+The full loop above is **Publication** mode. Not every task needs the full closed loop — a quick buildability check or a T3 exercise doesn't earn back the cost of brainstorm + viability + multi-round audit. So there are three effort tiers. **State the effort mode out loud** at the start of a run.
 
 | Mode | Runs | Skips | ~Time | Fits |
 |---|---|---|---|---|
-| **Quick** | data-and-estimand-audit → algorithm-design-lite (only `problem_definition` / `estimand` / `objective_or_likelihood` / `failure_boundaries`) → basic tests | brainstorm, topic-viability, full 16-field design, full spec, adversarial-panel-audit | ~30 min | "is this idea viable?", T3 learning, T4 internal one-off |
-| **Standard** | data-and-estimand-audit → topic-viability-assessment (deep-comparison + multi-dim score) → algorithm-design (full 16-field) → spec-writing (kiro 3-phase) → 1 round adversarial-panel-audit | brainstorm (user already has the one idea) | ~half day | T2 tool paper (default for "build a publishable tool") |
+| **Quick** | data-and-estimand-audit → algorithm-design-lite (only `problem_definition` / `estimand` / `objective_or_likelihood` / `failure_boundaries`) → basic tests | brainstorm, topic-viability, full formal-method-contract design, full spec, adversarial-panel-audit | ~30 min | "is this idea buildable / quick sanity?", T3 learning, T4 internal one-off (NOT a viability/competitor check) |
+| **Standard** | data-and-estimand-audit → topic-viability-assessment (deep-comparison + multi-dim score) → algorithm-design (full formal-method-contract) → spec-writing (kiro 3-phase) → 1 round adversarial-panel-audit | brainstorm (user already has the one idea) | ~half day | T2 tool paper; lightest mode that answers "is this idea worth doing?" (competitor deep-comparison + viability score) |
 | **Publication** | the **full closed loop**: brainstorm (≥3 ideas) → viability → multi-round adversarial-panel-audit → algorithm-design (formal) → spec-writing (kiro) → benchmark → Publication Roadmap | nothing | ~multiple days | T1 top-tier / complete publication |
 
 ### Mode selection
@@ -68,8 +68,8 @@ VIABILITY_HANDOFF:
 **design → spec**
 ```
 DESIGN_HANDOFF:
-  mathematical_abstraction, cross_domain_inspiration, proposed_algorithm,
-  failure_boundary, simulation_plan, novelty_basis   # the 6 fields + carried target_tier
+  proposed_algorithm, failure_boundaries, notation_and_shapes,   # design contract (machine payload — schemas/stage-schemas.json)
+  simulation_dgp, novelty_or_utility_basis, optimization_or_inference   # + carried target_tier
 ```
 **spec → code**
 ```
@@ -81,7 +81,7 @@ SPEC_HANDOFF:
 - **data-and-estimand-audit**: 审计数据+estimand（biological_unit / leakage / ground_truth / fatal_issues）；产出 data audit artifact；**brainstorm/algorithm-design 必须在 fatal_issues 为空（或用户显式接受风险）后才能开始**。
 - **brainstorm**: emit ≥3 candidates with ≥1 non-confirming gap; verify trends (no memory); hand off the set.
 - **topic-viability**: score under target_tier; if low + user insists → informed choice (accept tier risk / lock improvable axis / supply info); emit VIABILITY_HANDOFF.
-- **algorithm-design**: receive VIABILITY_HANDOFF; `novelty_basis` MUST address delta vs each top_competitor (tier-dependent); autonomous run with externalized reasoning, pause only at global forks; emit 6 fields.
+- **algorithm-design**: receive VIABILITY_HANDOFF; `novelty_or_utility_basis` MUST address delta vs each top_competitor (tier-dependent); autonomous run with externalized reasoning, pause only at global forks; emit the formal method contract.
 - **spec-writing**: receive DESIGN_HANDOFF; spec MUST be executable-level (no vague verbs like "do clustering"); acceptance criteria MUST map to `failure_boundary`; emit SPEC_HANDOFF.
 - **adversarial-panel-audit**: at each ★, spawn a same-model subagent panel (info-isolated, role-based; complete each role's checklist, do NOT force ≥1 finding — critique inflation forbidden; optional defender/replicator seat filters false positives); every finding structured (claim/evidence/severity/confidence/reproduction_check/blocking/suggested_fix); emit `pass / needs_revision(exact fields) / fail`. Honest about same-model blind spot + hybrid (external-model) upgrade path.
 
@@ -97,8 +97,8 @@ When an idea/artifact is rejected at viability / audit / design:
 
 Markdown-only handoffs **drift**. Real example: SCOUT's design.md said `TruncatedSVD` (a dimension-mismatch bug), but `scout.py` silently switched to `np.linalg.svd` — the spec never constrained the code, and nobody caught it until expert review. To make that drift machine-detectable, **every stage emits TWO artifacts**:
 
-- **`artifact.md`** — the human-readable output this contract already describes (the 16-field design, the kiro three-phase spec, the data-audit table, etc.).
-- **`artifact.json`** — a machine-checkable companion whose schema is `_shared/artifact-schema.json` and whose `stage_fields` are the stage's structured payload (see `artifact-validation.md` for the per-stage field table).
+- **`artifact.md`** — the human-readable output this contract already describes (the formal-method-contract design, the kiro three-phase spec, the data-audit table, etc.).
+- **`artifact.json`** — a machine-checkable companion whose schema is `schemas/stage-schemas.json` and whose `stage_fields` are the stage's structured payload (see `artifact-validation.md` for the per-stage field table).
 
 ### Artifact chain (root → leaf)
 ```
@@ -122,7 +122,7 @@ Before a stage trusts its input, it runs the 5 cross-stage consistency checks de
 
 **Validation failure = drift = STOP.** Do not proceed to the next stage until the drift is reconciled (fix the downstream artifact, or document an explicit, justified divergence). This is a hard gate, on top of the existing adversarial-panel-audit adversarial gate.
 
-**References**: schema — `_shared/artifact-schema.json`; rules + validation pseudocode — `_shared/artifact-validation.md`.
+**References**: schema — `schemas/stage-schemas.json`; rules + validation pseudocode — `_shared/artifact-validation.md`.
 
 ## One-line summary
 > brainstorm generates, viability scores under the user's ruler, design invents under competitor constraint, spec makes it buildable, and audit adversarially checks each — truth carries forward, never restarted, never trusted unchecked, and now machine-checked via the artifact.json chain at every handoff.

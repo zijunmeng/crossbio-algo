@@ -139,7 +139,7 @@ Those are the job of the **crossbio-algo:algorithm-design** skill, which receive
 
 ## Handoff
 - **research mode** → REQUIRED SUB-SKILL: **crossbio-algo:topic-viability-assessment**: each surviving idea is directly feedable — carry its R4 fields + R5 critique. User picks one or all; viability scores each under its target tier.
-- **dev mode** → **crossbio-algo:topic-viability-assessment** (score the seed under its tier) AND/OR directly to **crossbio-algo:algorithm-design** (deepen the seed into a full 6-field design). Carry `algorithm_abstraction` + `cross_domain_inspiration` + `novelty_score` + `existing_tools_gap` forward.
+- **dev mode** → **crossbio-algo:topic-viability-assessment** (score the seed under its tier) AND/OR directly to **crossbio-algo:algorithm-design** (deepen the seed into a full formal-method-contract design). Carry `algorithm_abstraction` + `cross_domain_inspiration` + `novelty_score` + `existing_tools_gap` forward.
 
 See `_shared/research-design-handoff.md` for the full-loop contract.
 

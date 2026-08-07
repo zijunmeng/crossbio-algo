@@ -12,11 +12,11 @@ A trusted artifact gets trusted because it survived attack, not because it read 
 
 ## Core Mechanism — 4 elements, all required
 1. **Information isolation.** Each audit subagent receives ONLY the artifact (the conclusion / design / spec / result block) — NEVER the producer's reasoning trace, scratchpad, or rationale. Forced independent judgment.
-2. **Multi-role panel.** Spawn 3 subagents in parallel via the Agent tool, each a distinct expert role chosen by audit target from the role menu in `agents/*.md`. Pick 3 of the 6 roles most relevant to the artifact.
-3. **Complete the role's checklist, do not invent critique.** Each subagent MUST complete its role's full checklist (`agents/<role>.md`). It is FORBIDDEN to return a vacuous "looks good / no issues" without having run the checklist. BUT a subagent that completes its checklist in good faith and finds **no material issue** SHOULD say so — do NOT manufacture a problem to fill a quota. Forced-finding quotas cause critique inflation (fabricated issues that waste revision cycles). Default to suspicion while *checking*; report what the check actually found.
+2. **Multi-role panel.** Spawn 3 subagents in parallel via the Agent tool, each a distinct expert role chosen by audit target from the role menu in `reviewer-roles/*.md`. Pick 3 of the 6 roles most relevant to the artifact.
+3. **Complete the role's checklist, do not invent critique.** Each subagent MUST complete its role's full checklist (`reviewer-roles/<role>.md`). It is FORBIDDEN to return a vacuous "looks good / no issues" without having run the checklist. BUT a subagent that completes its checklist in good faith and finds **no material issue** SHOULD say so — do NOT manufacture a problem to fill a quota. Forced-finding quotas cause critique inflation (fabricated issues that waste revision cycles). Default to suspicion while *checking*; report what the check actually found.
 4. **Structured verdict.** Aggregate the panel → `pass` | `needs_revision` (list the exact fields to fix) | `fail`. Never emit "都挺好".
 
-## The 6 roles (one file each in `agents/`)
+## The 6 roles (one file each in `reviewer-roles/`)
 | Role | Audits |
 |---|---|
 | **domain-biologist** | biology premise / mechanism plausibility / is the question biologically sound |
@@ -26,14 +26,16 @@ A trusted artifact gets trusted because it survived attack, not because it read 
 | **implementation-reviewer** | runnable / interfaces / boundary conditions / edge cases |
 | **reproducibility-reviewer** | seeds / environment / data availability / actually reproducible |
 
-Read the relevant `agents/<role>.md` for each role's full checklist before spawning it. **Pick 3** of the 6 for any single audit, chosen by what the artifact is. Optionally add a **defender / replicator** seat (see below).
+These are reviewer-role prompt templates passed to the native Agent tool (information-isolated, role-specialized) — not registered plugin subagents. Promoting them to native plugin subagents (frontmatter + plugin-root `agents/`) is a documented future option.
+
+Read the relevant `reviewer-roles/<role>.md` for each role's full checklist before spawning it. **Pick 3** of the 6 for any single audit, chosen by what the artifact is. Optionally add a **defender / replicator** seat (see below).
 
 ## Optional — the defender / replicator seat
 A 4th (optional) subagent whose job is the *opposite* of the others: **refute or replicate** the findings the other panel members raised. It tries to reproduce each claimed problem from the artifact alone; a finding that cannot be reproduced or is shown to rest on a misread is **downgraded or dropped**. Purpose: filter false positives — the panel is adversarial toward the *artifact*, the defender is adversarial toward the *panel's findings*. Use this whenever the other three raised blocking/severe findings you might act on.
 
 ## How to Run
 1. Extract the artifact block alone — strip every trace of the producer's reasoning.
-2. In ONE message, spawn the 3 panel subagents via the Agent tool (parallel). Each gets: its role (from `agents/<role>.md`) + the isolated artifact + the "complete the checklist, don't manufacture critique" clause. Add a defender/replicator seat if useful.
+2. In ONE message, spawn the 3 panel subagents via the Agent tool (parallel). Each gets: its role (from `reviewer-roles/<role>.md`) + the isolated artifact + the "complete the checklist, don't manufacture critique" clause. Add a defender/replicator seat if useful.
 3. Collect the findings → resolve into the verdict. `pass` only if no panel member raised a **blocking** issue (after defender/replicator filtering).
 
 ## Finding format (every issue MUST be structured)
@@ -62,7 +64,7 @@ Every subagent is the **same Claude** — they share training bias and the blind
 
 ## Hard Constraints
 - [ ] MUST isolate information — the producer's reasoning trace is never passed to any subagent.
-- [ ] MUST have each subagent complete its role's full checklist (`agents/<role>.md`).
+- [ ] MUST have each subagent complete its role's full checklist (`reviewer-roles/<role>.md`).
 - [ ] MUST NOT mandate ≥1 finding per subagent — a checklist completed in good faith that finds no material issue is a valid result. Do not invent critique.
 - [ ] MUST FORBID vacuous "looks good" / "no issues" that is NOT backed by a completed checklist.
 - [ ] MUST require every finding to be structured (claim/evidence/severity/confidence/reproduction_check/blocking/suggested_fix).
@@ -105,6 +107,6 @@ fields to fix:
 ```
 
 ## References
-- `agents/*.md` — the 6 role definitions (role + what it audits + checklist). Read the relevant ones before spawning.
+- `reviewer-roles/*.md` — the 6 role definitions (role + what it audits + checklist). Read the relevant ones before spawning.
 - `_shared/research-design-handoff.md` — the viability→design contract; audit inherits its target_tier ruler.
 - `cross-domain-inspiration.md` (attachment of **crossbio-algo:algorithm-design**) — when auditing an algorithm design, check inspiration actually crossed domains.

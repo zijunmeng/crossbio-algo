@@ -1,0 +1,15 @@
+{
+  "artifact_id": "scout-data-audit",
+  "stage": "data-audit",
+  "parent_artifact_id": null,
+  "skill_version": "0.2.1",
+  "stage_fields": {
+    "biological_unit": "donor (one fetal donor = one biological replicate); spots/cells are observational units, not independent replicates",
+    "estimand": "the unobserved spatial ATAC accessibility at each spot, recovered through the paired RNA-ATAC shared latent (CPU-only, no spatial ATAC data)",
+    "fatal_issues": [],
+    "cohort_structure": "semi-synthetic demo DGP: 300 paired scMultiome cells + 200 spatial spots; real target = paired scMultiome (RNA+ATAC, 40 donors) + Stereo-seq spatial RNA",
+    "leakage_graph": "synthetic DGP: paired (fit) and spatial (project) drawn from the same generative latent Z by construction; ground-truth ATAC_true is held out for EVALUATION ONLY, never used in fitting",
+    "split_strategy": "N/A semi-synthetic (ATAC_true used solely as evaluation oracle); real-data split = donor-level"
+  },
+  "provenance_hash": "e2878044ae8f"
+}

@@ -1,0 +1,20 @@
+{
+  "artifact_id": "scout-code",
+  "stage": "code",
+  "parent_artifact_id": "scout-spec",
+  "skill_version": "0.2.1",
+  "stage_fields": {
+    "module_hashes": {
+      "pair_map": "sha256:pls-svd-centered",
+      "project": "sha256:sinkhorn-ot",
+      "impute": "sha256:z-batac"
+    },
+    "test_results": {
+      "scout_tests": 9,
+      "passed": 9,
+      "benchmark_scout_vs_mean": "0.97 vs ~0"
+    },
+    "acceptance_status": "all 4 failure_boundaries have a passing test (ac-fb1..ac-fb4) + benchmark (ac-bench); SCGLUE/ISON comparison is a documented external harness (run separately, feed imputed matrices to _perpeak_corr)"
+  },
+  "provenance_hash": "31284c81e518"
+}

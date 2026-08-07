@@ -1,0 +1,50 @@
+{
+  "artifact_id": "scout-design",
+  "stage": "design",
+  "parent_artifact_id": "scout-data-audit",
+  "skill_version": "0.2.1",
+  "stage_fields": {
+    "problem_definition": "From paired scMultiome (RNA+ATAC, no spatial) + spatial RNA (no ATAC), infer spatial ATAC via a shared paired latent; CPU-only.",
+    "estimand": "the unobserved spatial ATAC accessibility at each spot, recovered through the paired RNA-ATAC shared latent (CPU-only, no spatial ATAC data)",
+    "notation_and_shapes": {
+      "shapes": {
+        "X_rna": "n×g_rna",
+        "X_atac": "n×g_atac",
+        "X_s": "m×g_rna",
+        "Z": "n×k",
+        "U": "g_rna×k",
+        "V": "g_atac×k",
+        "B_atac": "k×g_atac",
+        "spatial_Z": "m×k",
+        "atac_hat": "m×g_atac",
+        "P": "m×n"
+      }
+    },
+    "objective_or_likelihood": "PLS: maximize tr(U^T C_xy V) over orthonormal U,V with C_xy the CENTERED cross-covariance (solved by SVD); latent->ATAC B_atac = argmin||Xa - Z B||^2 (least squares); spatial projection = entropic OT min<P,M> + eps*KL(P||ab) solved by Sinkhorn",
+    "identifiability": "Spatial ATAC is NOT directly identifiable (no spatial ATAC observed). Identifiable only via the shared paired latent + the OT alignment assumption; degrades when the spatial RNA manifold does not overlap the paired manifold (fb1).",
+    "failure_boundaries": [
+      {
+        "id": "fb1",
+        "condition": "spatial spots drawn outside the paired manifold",
+        "mechanism": "OT transport spreads / collapses; barycentric latent falls back to the paired mean -> imputation confident-but-wrong unless flagged"
+      },
+      {
+        "id": "fb2",
+        "condition": "per-spot RNA reads < threshold",
+        "mechanism": "RNA too sparse to localize the spot in the paired latent; flagged low_confidence"
+      },
+      {
+        "id": "fb3",
+        "condition": "weak RNA-ATAC pairing (small cross-covariance singular values)",
+        "mechanism": "shared latent carries little ATAC information; B_atac reconstruction uninformative"
+      },
+      {
+        "id": "fb4",
+        "condition": "batch shift between paired and spatial data",
+        "mechanism": "OT aligns batch artifact rather than biology"
+      }
+    ],
+    "complexity": "pair_map: SVD O(min(g,n)^2 * max) + lstsq O(n k^2); project: Sinkhorn O(n_iter * m_in * n), mini-batch over m for scale; CPU-feasible to ~100k spots with mini-batch (POT in production)"
+  },
+  "provenance_hash": "dbca09a09359"
+}

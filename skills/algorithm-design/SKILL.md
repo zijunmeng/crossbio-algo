@@ -8,7 +8,7 @@ description: Use when someone wants to DESIGN a new algorithm, method, or model 
 ## Overview
 Designing a new algorithm means **formalizing a method that is useful**, not chasing structural novelty for its own sake. Many of the best algorithms are **rigorous combinations** of mature methods; a strict "must invent, not recombine" stance **induces pseudo-novelty** — it pushes the designer away from robust known solutions toward structurally-different-but-worse ones (our spatialEnKF / spatialDST collision with existing work is the lesson: novelty-first, utility-second designs reinvent things and still lose).
 
-This skill enforces a **formal method contract** — a 16-field specification grouped into Problem / Formalization / Algorithm / Guarantees / Validation — built by a 4-step process: **abstract to the mathematical essence → optionally import cross-domain sparks → state where it must fail → simulation-first**.
+This skill enforces a **formal method contract** — a 15-required + 2-optional (17-field) specification grouped into Problem / Formalization / Algorithm / Guarantees / Validation — built by a 4-step process: **abstract to the mathematical essence → optionally import cross-domain sparks → state where it must fail → simulation-first**.
 
 Two disciplines make it work:
 - **Externalized reasoning (推理外显)**: the agent decides the professional calls itself, but explains *why* at every step. The user corrects or overrides whenever they want — they are never *required* to make a professional either/or they can't judge.
@@ -69,7 +69,7 @@ State: "This algorithm degrades / fails when [mathematical condition], because [
 ### 4. Simulation-First (before real data)
 Commit: "Building synthetic data with a fully specified **data-generating process (DGP)** to probe that boundary." Specify: the DGP (not just parameter sweeps), the **null regime** (where the true signal is absent — method must not hallucinate), the **adversarial regime** (where the failure condition is deliberately triggered), the **oracle upper bound** (the best any method could do with ground truth), the **trivial lower bound** (a naive baseline — see Validation), and the swept parameter ranges and why they stress the boundary. Do not stop to ask.
 
-## Required Output — the 16-field Formal Method Contract (5 groups)
+## Required Output — the Formal Method Contract (5 groups · 15 required + 2 optional fields)
 
 None of the **required** fields are optional; the **encouraged** fields are filled when they apply. Missing a required field = invalid output.
 
@@ -134,7 +134,7 @@ None of the **required** fields are optional; the **encouraged** fields are fill
 - User was forced into a binary on a technical judgment outside their scope → mis-scoped collaboration; the agent should have recommended.
 
 ## Artifact output
-In addition to the 16-field contract above (human-readable), this stage emits **`artifact.json`** (schema: `_shared/artifact-schema.json`): `stage_fields = {problem_definition, estimand, notation_and_shapes, objective_or_likelihood, identifiability, failure_boundaries, complexity}`.
+In addition to the formal method contract above (human-readable: 15 required + 2 optional = 17 fields), this stage emits **`artifact.json`** (schema: `schemas/stage-schemas.json`): `stage_fields = {problem_definition, estimand, notation_and_shapes, objective_or_likelihood, identifiability, failure_boundaries, complexity}`.
 Three fields propagate downstream and are cross-stage-validated (`_shared/artifact-validation.md`):
 - **`estimand` MUST == `data-audit.artifact.estimand`** (rule 1) — drift requires an explicit `estimand_change_justification`; silent change = invalid.
 - **`failure_boundaries`** propagate to spec — every boundary item MUST have a matching `spec.acceptance_criteria` with `traces_to` naming it (rule 2, no orphans).
@@ -143,9 +143,9 @@ Three fields propagate downstream and are cross-stage-validated (`_shared/artifa
 ## References
 - `cross-domain-inspiration.md` (in this folder) — the 28-domain essence→domains map + method pool.
 - `_shared/research-design-handoff.md` — the viability→design contract (read if chained from **crossbio-algo:topic-viability-assessment**).
-- `_shared/artifact-schema.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits.
+- `schemas/stage-schemas.json` + `_shared/artifact-validation.md` — the machine-checkable artifact this stage emits.
 
-## Example — scRNA-seq imputation (16-field contract)
+## Example — scRNA-seq imputation (formal method contract)
 
 ```
 # Group P — Problem
