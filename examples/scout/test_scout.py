@@ -130,7 +130,7 @@ def test_downsample_drift_and_lowconfidence_grow_AC2():
     assert lowfracs[-1] >= lowfracs[0], f"low_confidence fraction must grow as reads drop: {lowfracs}"
 
 
-def test_benchmark_beats_naive_AC4():
+def test_benchmark_beats_naive():
     """AC-4: SCOUT recovery > mean-impute and > zero (the naive baselines a fair benchmark must include)."""
     res = scout.benchmark(seed=0, k=5)
     assert res["scout"] > res["mean_impute"], f"SCOUT must beat mean-impute: {res}"

@@ -6,7 +6,7 @@
   "stage_fields": {
     "module_hashes": {
       "pair_map": "6d1a12a323b8",
-      "project": "c168d2eb0607",
+      "project": "c625823f530c",
       "impute": "32fa137b0536"
     },
     "test_results": {
@@ -25,7 +25,7 @@
         "module": "project",
         "source_file": "../scout.py",
         "symbol": "project",
-        "source_sha256": "c168d2eb0607969f8fff92054d57738bac3cb5ed1786113ef578a6ae6b8f6dbf"
+        "source_sha256": "c625823f530c75ff38ea7d63e89f7944f54dd0b36ad32b235b5f7fd4f20999b2"
       },
       {
         "module": "impute",
@@ -51,7 +51,7 @@
         "test_id": "TEST-bench",
         "verifies_ac": "ac-bench",
         "status": "passed",
-        "pytest_nodeid": "examples/scout/test_scout.py::test_benchmark_beats_naive_AC4"
+        "pytest_nodeid": "examples/scout/test_scout.py::test_benchmark_beats_naive"
       },
       {
         "test_id": "TEST-fb3",
@@ -67,5 +67,5 @@
       }
     ]
   },
-  "provenance_hash": "6f7b9a5a2c9f"
+  "provenance_hash": "5795a42cd272"
 }

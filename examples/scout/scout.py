@@ -5,6 +5,10 @@ v0.2.1 model (P0-4 unified): **PLS** (SVD of the *centered* cross-covariance) le
 paired factors; **entropic optimal transport** (Sinkhorn) projects spatial-only RNA into the
 paired latent. CPU-only, numpy.
 
+Coordinate-agnostic: SCOUT produces a per-spot ATAC estimate but does NOT consume spatial (xy)
+coordinates — ``obsm['spatial']`` is passed through for downstream visualization only. There is no
+spatial regularization (a deliberate scope boundary; see ``design.md``).
+
 P0-4 consistency guarantee: there is ONE cross-modal coefficient `B_atac` (latent->ATAC, fit by
 least squares on the paired data). It is used by BOTH `impute()` AND the cross-modal reconstruction
 check -- so "the formula the tests validate" IS "the formula the code ships." v0.1's bug (the test
@@ -86,7 +90,7 @@ def _sinkhorn(M, eps, n_iter=200):
     return u[:, None] * K * v[None, :]
 
 
-def project(fit, spatial_adata, eps=None, n_iter=200, reads_threshold=10.0):
+def project(fit, spatial_adata, eps=None, n_iter=200, reads_threshold=10.0, count_layer=None):
     """Project spatial RNA into the paired latent by entropic OT, + per-spot confidence.
 
     - AC-1 (heterogeneous region -> low confidence): a spot is low-confidence if it is OUT of the
@@ -103,7 +107,17 @@ def project(fit, spatial_adata, eps=None, n_iter=200, reads_threshold=10.0):
     """
     X_s = np.asarray(spatial_adata.X, dtype=float)            # [m, g_rna]
     m = X_s.shape[0]
-    reads = X_s.sum(axis=1)                                    # per-spot total RNA counts (AC-2)
+    # AC-2 read-depth uses RAW counts. count_layer selects the layer; if None, .X is assumed raw
+    # counts (a warning is appropriate) — many .X are log1p/normalized, for which reads<threshold is
+    # meaningless (reviewer §14). Pass count_layer="counts" to apply the rule correctly.
+    if count_layer is not None and hasattr(spatial_adata, "layers") and count_layer in spatial_adata.layers:
+        reads = np.asarray(spatial_adata.layers[count_layer], dtype=float).sum(axis=1)
+    elif count_layer is not None:
+        import sys
+        print(f"SCOUT: count_layer {count_layer!r} not found — reads rule disabled", file=sys.stderr)
+        reads = np.full(m, np.inf)
+    else:
+        reads = X_s.sum(axis=1)
 
     Xr_s = X_s - fit.mean_rna
     phi_s = Xr_s @ fit.U                                       # spatial RNA-side latent coords [m, k]
@@ -112,7 +126,7 @@ def project(fit, spatial_adata, eps=None, n_iter=200, reads_threshold=10.0):
     Dp = _sqdist(phi_p, phi_p); np.fill_diagonal(Dp, np.inf)
     paired_nn = np.median(Dp.min(axis=1))                      # typical squared NN spacing in the cloud
     if eps is None:
-        eps = 0.5 * np.sqrt(paired_nn) + 1e-9     # sharp transport (demo scale); raise eps to smooth
+        eps = 0.5 * paired_nn + 1e-9     # squared-cost units (M is squared dist) -> M/eps dimensionless (reviewer §11.1)
 
     M = _sqdist(phi_s, phi_p)                                  # [m, n] cost
     far = M.min(axis=1) > 9.0 * paired_nn                      # out-of-manifold (fb1): >3x cloud spacing
