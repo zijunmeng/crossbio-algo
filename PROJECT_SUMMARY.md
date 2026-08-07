@@ -9,7 +9,11 @@
 | **0 release blockers** | CI 红(PyYAML)修复 `pip install -e ".[test,examples]"`;版本单源(plugin.json/pyproject/CITATION/CHANGELOG 一致,`test_meta` 强制);schema 移入 package(`importlib.resources`),**wheel 实测含 schema**;README 8→9 | 干净 conda env wheel build+install+validate 从 /tmp 通过 |
 | **1 executable trace(中心)** | 真 source hash(从磁盘重算);`FB→AC→TEST→RESULT` 图;`verification_mode`(test/sim/benchmark/**documented_limitation**/...);**规则 6**:声明 tested 但无 passing test → FAIL;**规则 7**:documented_limitation 不能标 pass;**规则 8**:source 漂移 → FAIL | 26 validator 测试(含攻击样本);SCOUT fb3/fb4 诚实标 documented_limitation;**validator 拒绝 v0.2.1 的假声明**(把 fb3 翻成 tested → "DECLARED, not TESTED")|
 
-**全套 42 测试**(validator 26 + viability 5 + SCOUT 9 + meta 2),crossbio env 干净验证通过。Phase 2(SCOUT 诚实最小化)+ Phase 3(skill effectiveness benchmark)进行中。
+**全套测试 crossbio env 干净验证通过**(validator 26 + viability 5 + SCOUT 9 + meta 2)。
+
+**Phase 2(SCOUT 诚实最小夹具)**:eps 量纲修复(§11.1)、raw-count `count_layer` 契约(§14)、coordinate-agnostic 文档、AC 命名漂移修复;fb3/fb4 诚实标 documented_limitation;改 `project()` 触发 source-hash 漂移 → validator 抓到 → re-stamp 通过(rule 8 实战)。
+
+**Phase 3(skill effectiveness benchmark)**:`benchmarks/` 设计 + 10 维 rubric + `run_case.py` harness + 1 个 **non-scanpy** pilot(phylo-recombination,病毒方向):standard 0.95 vs no-skill 0.36(**+0.59**,trap 维 estimand/leakage/benchmark/failure-boundary 全移动)。诚实限制:same-model grader、非盲、单 case → 完整 8 域 + 外部盲评专家是下一里程碑(TESTED→SCIENTIFICALLY SUPPORTED)。
 
 ---
 

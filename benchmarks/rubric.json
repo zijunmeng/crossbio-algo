@@ -1,0 +1,26 @@
+{
+  "rubric_version": "0.1",
+  "dimensions": [
+    {"dim": "problem_definition", "weight": 1.0, "trap": "vague 'build a tool'; no input/estimand/output",
+     "anchors": {"0": "vague", "1": "task named but imprecise", "2": "input/output stated, estimand loose", "3": "precise problem + exact estimand"}},
+    {"dim": "estimand_correctness", "weight": 1.5, "trap": "non-estimand ('cluster the cells')",
+     "anchors": {"0": "no estimand", "1": "verbal target", "2": "stated but imprecise", "3": "exact, data-supported estimand"}},
+    {"dim": "data_leakage", "weight": 1.5, "trap": "cell-level split; truth used as input",
+     "anchors": {"0": "leakage present / not considered", "1": "mentions split, wrong unit", "2": "right unit, unverified", "3": "leakage graph drawn, split at correct unit, verified"}},
+    {"dim": "statistical_assumptions", "weight": 1.0, "trap": "wrong distribution; pseudoreplication",
+     "anchors": {"0": "none stated", "1": "generic", "2": "stated, partly matched", "3": "matched to data + independence analyzed"}},
+    {"dim": "benchmark_fairness", "weight": 1.5, "trap": "only SOTA, no naive baseline",
+     "anchors": {"0": "no benchmark / unfair", "1": "vs SOTA only", "2": "+ naive baseline", "3": "fair: same mask/compute + naive + leakage-checked"}},
+    {"dim": "novelty_honesty", "weight": 1.0, "trap": "'novel' without checking; competitors ignored",
+     "anchors": {"0": "overclaimed", "1": "novelty asserted", "2": "competitors named", "3": "5-class competitor analysis + explicit novelty locus"}},
+    {"dim": "implementability", "weight": 1.0, "trap": "sketch with no solver",
+     "anchors": {"0": "prose only", "1": "steps named", "2": "+ solver", "3": "solver + complexity + interfaces"}},
+    {"dim": "failure_boundary_quality", "weight": 1.0, "trap": "'tested on benchmark' only",
+     "anchors": {"0": "none", "1": "vague limit", "2": "condition stated", "3": "condition + mechanism, derived"}},
+    {"dim": "reproducibility", "weight": 0.5, "trap": "loose deps, no seed",
+     "anchors": {"0": "none", "1": "seed only", "2": "+ pinned deps", "3": "seed + env lock + data version"}},
+    {"dim": "overall_usefulness", "weight": 1.0, "trap": "cheerleading",
+     "anchors": {"0": "would mislead", "1": "weak", "2": "usable", "3": "a senior reviewer advances it"}}
+  ],
+  "scoring": "weighted sum of (0-3)/3 over dimensions, normalized to 0-1. Trap dims are near-binary."
+}

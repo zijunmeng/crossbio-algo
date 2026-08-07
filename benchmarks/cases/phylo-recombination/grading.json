@@ -1,0 +1,23 @@
+{
+  "case": "phylo-recombination",
+  "domain": "phylogenetics / virology (non-scanpy)",
+  "grader_note": "PILOT — same-model grader, NOT blinded; author-of-both bias. Illustrative only (see DESIGN.md).",
+  "scores": {
+    "no-skill": {
+      "problem_definition": 2, "estimand_correctness": 1, "data_leakage": 1,
+      "statistical_assumptions": 1, "benchmark_fairness": 1, "novelty_honesty": 1,
+      "implementability": 2, "failure_boundary_quality": 0, "reproducibility": 1,
+      "overall_usefulness": 1
+    },
+    "standard": {
+      "problem_definition": 3, "estimand_correctness": 3, "data_leakage": 3,
+      "statistical_assumptions": 3, "benchmark_fairness": 3, "novelty_honesty": 3,
+      "implementability": 2, "failure_boundary_quality": 3, "reproducibility": 2,
+      "overall_usefulness": 3
+    }
+  },
+  "traps_caught": {
+    "no-skill": [],
+    "standard": ["T1 estimand", "T2 clade leakage", "T3 circular truth", "T4 shared-ancestry confound", "T5 naive baseline", "T6 failure boundary"]
+  }
+}
