@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
 import json
 import os
 import sys
@@ -41,6 +42,61 @@ def _load_artifacts(path: str) -> list[dict]:
     return arts
 
 
+def _run_attest(target, out, root="."):
+    """Run pytest on `target` (from `root`), parse the JUnit XML, write results.json (observed
+    outcomes). The validator's rule_test_link reads this to ATTEST test status — code.json has no
+    authority to self-declare 'passed' (reviewer §2, v0.2.3)."""
+    import datetime
+    import subprocess
+    import tempfile
+    import xml.etree.ElementTree as ET
+
+    junit = tempfile.mktemp(suffix=".xml")
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", target, f"--junit-xml={junit}", "-q", "--no-header"],
+        cwd=root, capture_output=True, text=True,
+    )
+    tests = {}
+    if os.path.exists(junit):
+        try:
+            for tc in ET.parse(junit).getroot().iter("testcase"):
+                file = tc.get("file") or target
+                nodeid = f"{file}::{tc.get('name')}"
+                outcome = "passed"
+                for child in tc:
+                    if child.tag in ("failure", "error"):
+                        outcome = "failed"
+                    elif child.tag == "skipped":
+                        outcome = "skipped"
+                tests[nodeid] = {"outcome": outcome}
+        finally:
+            try:
+                os.remove(junit)
+            except OSError:
+                pass
+
+    def _sh(cmd):
+        try:
+            return subprocess.check_output(cmd, cwd=root, text=True, stderr=subprocess.DEVNULL).strip()
+        except Exception:
+            return None
+
+    git_commit = _sh(["git", "rev-parse", "HEAD"])
+    env_hash = hashlib.sha256((_sh([sys.executable, "--version"]) or "").encode()).hexdigest()[:12]
+    result = {
+        "generated_via": "crossbio attest",
+        "generated_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git_commit": git_commit,
+        "env_hash": env_hash,
+        "tests": tests,
+    }
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    json.dump(result, open(out, "w"), indent=2)
+    n_pass = sum(1 for t in tests.values() if t["outcome"] == "passed")
+    print(f"attested {len(tests)} outcomes ({n_pass} passed) -> {out}")
+    return 0 if proc.returncode == 0 else 1
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(
         prog="crossbio", description="crossbio-algo artifact validator"
@@ -66,7 +122,17 @@ def main(argv=None) -> int:
     )
     st.add_argument("artifact")
 
+    at = sub.add_parser(
+        "attest", help="run pytest and write observed results.json (ATTESTED outcomes)"
+    )
+    at.add_argument("target", help="pytest target (file/nodeid), repo-relative")
+    at.add_argument("--out", required=True, help="output results.json path")
+    at.add_argument("--root", default=".", help="repo root to run pytest from (default cwd)")
+
     args = p.parse_args(argv)
+
+    if args.cmd == "attest":
+        return _run_attest(args.target, args.out, args.root)
 
     if args.cmd == "stamp":
         a = json.load(open(args.artifact))

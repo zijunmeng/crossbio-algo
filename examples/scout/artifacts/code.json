@@ -2,36 +2,39 @@
   "artifact_id": "scout-code",
   "stage": "code",
   "parent_artifact_id": "scout-spec",
-  "skill_version": "0.2.2",
+  "skill_version": "0.2.3",
   "stage_fields": {
     "module_hashes": {
       "pair_map": "6d1a12a323b8",
       "project": "c625823f530c",
-      "impute": "32fa137b0536"
+      "impute": "81bee793bdbd"
     },
     "test_results": {
-      "scout_tests": 9,
-      "passed": 9
+      "scout_tests": 11,
+      "passed": 11
     },
-    "acceptance_status": "fb1/fb2 automated_test PASS; benchmark PASS; fb3/fb4 known_limitation (honest)",
+    "acceptance_status": "fb1/fb2 automated_test PASS (attested); benchmark ac-bench PASS vs mean/zero (attested); fb3/fb4 documented_limitation (known). HONEST FINDING: on this synthetic DGP, PLS-direct (no OT) >= SCOUT (nominal pls_direct=1.00 vs scout=0.97; out-of-manifold pls_direct=1.00 vs scout=0.38) — the OT step's contribution is NOT demonstrated by this benchmark; the DGP does not exercise OT's distribution-shift regime. This is a documented limitation, not a claim that OT is useless.",
     "implementations": [
       {
         "module": "pair_map",
         "source_file": "../scout.py",
         "symbol": "pair_map",
-        "source_sha256": "6d1a12a323b8345066fb82a4a3303642e4a4b53ba19a7c91d2a8e0062c552b72"
+        "source_sha256": "6d1a12a323b8345066fb82a4a3303642e4a4b53ba19a7c91d2a8e0062c552b72",
+        "module_sha256": "e4e6a7448c6d0c2d9813c68ad59e8c81edaaee3c2403874f27a91e39db09cb6f"
       },
       {
         "module": "project",
         "source_file": "../scout.py",
         "symbol": "project",
-        "source_sha256": "c625823f530c75ff38ea7d63e89f7944f54dd0b36ad32b235b5f7fd4f20999b2"
+        "source_sha256": "c625823f530c75ff38ea7d63e89f7944f54dd0b36ad32b235b5f7fd4f20999b2",
+        "module_sha256": "e4e6a7448c6d0c2d9813c68ad59e8c81edaaee3c2403874f27a91e39db09cb6f"
       },
       {
         "module": "impute",
         "source_file": "../scout.py",
         "symbol": "impute",
-        "source_sha256": "32fa137b05364060599e2404c08cde68f6c206f4b61525e8631a4d71252694cb"
+        "source_sha256": "81bee793bdbd2be7e8a4da69239c85c98c1117251f19e79af0ee4b0ed458159d",
+        "module_sha256": "e4e6a7448c6d0c2d9813c68ad59e8c81edaaee3c2403874f27a91e39db09cb6f"
       }
     ],
     "tests": [
@@ -67,5 +70,5 @@
       }
     ]
   },
-  "provenance_hash": "5795a42cd272"
+  "provenance_hash": "1216d46b5ab7"
 }

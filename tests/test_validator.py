@@ -292,7 +292,8 @@ def test_good_chain_with_code_passes(tmp_path):
     core.stamp(s)
     c = code()
     c["stage_fields"]["implementations"] = [
-        {"module": "pair_map", "source_file": str(src), "symbol": "pair_map", "source_sha256": src_sha}]
+        {"module": "pair_map", "source_file": str(src), "symbol": "pair_map",
+         "source_sha256": src_sha, "module_sha256": core._source_sha256(str(src), None)}]
     c["stage_fields"]["tests"] = [{"test_id": "t1", "verifies_ac": "ac1", "status": "passed"}]
     core.stamp(c)
     assert errs(core.validate_chain([da(), design(), s, c], root=str(tmp_path))) == []
@@ -340,3 +341,59 @@ def test_limitation_known_status_ok():
     c["stage_fields"]["tests"] = [{"test_id": "t1", "verifies_ac": "ac1", "status": "known_limitation"}]
     core.stamp(c)
     assert "verification-mode" not in rules(errs(core.validate_chain([da(), design(), s, c])))
+
+
+# ---------------- Phase A (v0.2.3): ATTESTED — results.json overrides self-declaration ----------------
+def _code_with_impl(tmp_path, nodeid, status="passed"):
+    src = _write_src(tmp_path)
+    c = code()
+    c["stage_fields"]["implementations"] = [{"module": "pair_map", "source_file": str(src),
+        "symbol": "pair_map", "source_sha256": core._source_sha256(str(src), "pair_map"),
+        "module_sha256": core._source_sha256(str(src), None)}]
+    c["stage_fields"]["tests"] = [{"test_id": "t1", "verifies_ac": "ac1", "status": status,
+                                   "pytest_nodeid": nodeid}]
+    core.stamp(c)
+    return c
+
+
+def _ac_spec(mode="automated_test"):
+    s = spec()
+    s["stage_fields"]["acceptance_criteria"] = [
+        {"id": "ac1", "traces_to": ["fb1"], "verification_mode": mode}]
+    core.stamp(s)
+    return s
+
+
+def test_attested_results_override_self_declaration(tmp_path):
+    """ATTESTED: results.json observing 'passed' => TESTED, even if artifact omits status.
+    code.json has no authority to self-attest (reviewer §2 v0.2.3)."""
+    (tmp_path / "results.json").write_text(json.dumps(
+        {"tests": {"test_x.py::test_t1": {"outcome": "passed"}}}))
+    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")
+    assert errs(core.validate_chain([da(), design(), _ac_spec(), c], root=str(tmp_path))) == []
+
+
+def test_attested_observed_failure_beats_self_declared_passed(tmp_path):
+    """ATTESTED: results.json observing 'failed' => ERROR, even though the artifact says status=passed.
+    This is the core fix — DECLARED passed != TESTED passed."""
+    (tmp_path / "results.json").write_text(json.dumps(
+        {"tests": {"test_x.py::test_t1": {"outcome": "failed"}}}))
+    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")  # self-declares passed (a lie)
+    assert "test-link" in rules(errs(core.validate_chain([da(), design(), _ac_spec(), c], root=str(tmp_path))))
+
+
+def test_unattested_declared_passed_is_only_a_warning():
+    """Without results.json, a self-declared 'passed' is a WARNING (unattested), not trusted — and not an error."""
+    import tempfile
+    td = tempfile.mkdtemp()
+    src = _write_src(__import__("pathlib").Path(td))
+    c = code()
+    c["stage_fields"]["implementations"] = [{"module": "pair_map", "source_file": str(src),
+        "symbol": "pair_map", "source_sha256": core._source_sha256(str(src), "pair_map"),
+        "module_sha256": core._source_sha256(str(src), None)}]
+    c["stage_fields"]["tests"] = [{"test_id": "t1", "verifies_ac": "ac1", "status": "passed",
+                                   "pytest_nodeid": "test_x.py::test_t1"}]
+    core.stamp(c)
+    findings = core.validate_chain([da(), design(), _ac_spec(), c], root=td)
+    assert "test-link" not in rules(errs(findings))  # not an ERROR
+    assert any(f.rule == "test-link" and f.severity == "WARNING" for f in findings)  # is a WARNING

@@ -151,15 +151,18 @@ def project(fit, spatial_adata, eps=None, n_iter=200, reads_threshold=10.0, coun
 # Task 3 -- impute: the ONE cross-modal map (P0-4 consistency)
 # ----------------------------------------------------------------------------
 def impute(spatial_Z, fit):
-    """Infer spatial ATAC. Uses the SAME `B_atac` the cross-modal reconstruction check validates."""
-    return spatial_Z @ fit.B_atac                              # [m, k] @ [k, g_atac] -> [m, g_atac]
+    """Infer spatial ATAC on its ORIGINAL scale. `B_atac` was fit on CENTERED ATAC
+    (``Xa = X_atac - mean_atac``), so the intercept ``mean_atac`` MUST be added back.
+    v0.2.2 dropped it — invisible to Pearson-only tests (reviewer §3); RMSE catches it.
+    Uses the SAME ``B_atac`` the cross-modal reconstruction check validates."""
+    return fit.mean_atac + spatial_Z @ fit.B_atac              # intercept + latent map -> original-scale ATAC
 
 
 # ----------------------------------------------------------------------------
 # Task 4 -- simulate (DGP) + downsample failure curve + benchmark
 # ----------------------------------------------------------------------------
 def simulate(n_multi=300, n_spatial=200, k=5, g_rna=20, g_atac=30,
-             pairing_strength=1.0, manifold_overlap=1.0, rna_noise=0.0, seed=0):
+             pairing_strength=1.0, manifold_overlap=1.0, rna_noise=0.0, atac_offset=5.0, seed=0):
     """Semi-synthetic DGP (per simulation_dgp in the design contract).
 
     - shared latent Z drives paired RNA+ATAC.
@@ -167,6 +170,8 @@ def simulate(n_multi=300, n_spatial=200, k=5, g_rna=20, g_atac=30,
     - `manifold_overlap` in (0,1]: fraction of spatial cells drawn IN the paired manifold
       (the rest are out-of-manifold -> fb1, heterogeneous, should be low-confidence).
     - `rna_noise`: RNA-only variance uncorrelated with ATAC (separates PLS from RNA-only PCA).
+    - `atac_offset`: a NONZERO ATAC intercept (mean) so the impute-intercept bug is visible to
+      absolute-scale metrics (reviewer §3); with offset≠0, dropping mean_atac gives a systematic error.
     """
     rng = np.random.default_rng(seed)
     Z_multi = rng.normal(size=(n_multi, k))
@@ -175,13 +180,13 @@ def simulate(n_multi=300, n_spatial=200, k=5, g_rna=20, g_atac=30,
 
     rna_multi = Z_multi @ W_rna + rna_noise * rng.normal(size=(n_multi, g_rna)) + 10.0
     multi = _AD(rna_multi.astype("float32"),
-                {"ATAC": (Z_multi @ W_atac.T).astype("float32")})
+                {"ATAC": (Z_multi @ W_atac.T + atac_offset).astype("float32")})
 
     n_in = int(manifold_overlap * n_spatial)
     Z_space = np.empty((n_spatial, k))
     Z_space[:n_in] = Z_multi[rng.choice(n_multi, n_in, replace=True)]         # in-manifold
     Z_space[n_in:] = rng.normal(size=(n_spatial - n_in, k)) * 2.0 + 3.0        # far from paired manifold (fb1)
-    atac_true = Z_space @ W_atac.T                                            # ground-truth spatial ATAC
+    atac_true = Z_space @ W_atac.T + atac_offset                              # ground-truth spatial ATAC (nonzero intercept)
     rna_space = Z_space @ W_rna + rna_noise * rng.normal(size=(n_spatial, g_rna)) + 10.0
     spatial = _AD(rna_space.astype("float32"),
                   {"spatial": rng.uniform(size=(n_spatial, 2)),
@@ -197,28 +202,50 @@ def _perpeak_corr(A, B):
     return float(np.mean((A / na * B / nb).sum(0)))
 
 
+def _rmse(A, B):
+    """Root-mean-square error on the ABSOLUTE scale (catches offset/intercept bugs Pearson misses)."""
+    return float(np.sqrt(((np.asarray(A, float) - np.asarray(B, float)) ** 2).mean()))
+
+
+def _pls_direct(fit, spatial_adata):
+    """PLS-direct baseline (NO optimal transport): project spatial RNA through the PLS directions
+    directly, skipping the OT alignment. Answers 'what does OT contribute?' (reviewer §4) — if
+    PLS_direct ≈ SCOUT, the OT step adds little."""
+    X_s = np.asarray(spatial_adata.X, dtype=float)
+    Z_direct = (X_s - fit.mean_rna) @ fit.U
+    return impute(Z_direct, fit)
+
+
 def benchmark(seed=0, k=5):
-    """Semi-synthetic benchmark (AC-4): SCOUT ATAC recovery vs naive baselines.
-
-    Returns per-peak Pearson corr of imputed vs true ATAC for: scout, mean-impute, zero.
-    SCGLUE/ISON comparison is a documented harness -- run those externally and feed their imputed
-    matrices to `_perpeak_corr`; this computes SCOUT + the naive baselines any fair benchmark MUST
-    include (the simplest competitors are the most important real ones).
-    """
-    multi, spatial = simulate(seed=seed, k=k)
-    atac_true = np.asarray(spatial.obsm["ATAC_true"], dtype=float)
-
-    fit = pair_map(multi, k=k)
-    spatial_Z, _conf, _lowc = project(fit, spatial)
-    atac_scout = impute(spatial_Z, fit)
-
-    atac_mean = np.tile(atac_true.mean(0), (atac_true.shape[0], 1))   # global-mean baseline (Cat 5)
-    atac_zero = np.zeros_like(atac_true)                              # all-zero baseline (Cat 5)
-    return {
-        "scout": _perpeak_corr(atac_scout, atac_true),
-        "mean_impute": _perpeak_corr(atac_mean, atac_true),
-        "zero": _perpeak_corr(atac_zero, atac_true),
+    """Semi-synthetic benchmark ACROSS REGIMES (ac-bench traces fb1+fb3, so those regimes MUST be
+    exercised, not just nominal — reviewer §4). Returns per-regime {scout, pls_direct, mean, zero,
+    rmse_scout, rmse_pls_direct}. The mean baseline uses the TRAINING (paired) ATAC mean, never the
+    test truth (no leakage — reviewer §4). SCGLUE/ISON comparison is an external harness."""
+    regimes = {
+        "nominal": {},
+        "fb3-weak-pairing": {"pairing_strength": 0.3},      # exercises fb3
+        "fb1-out-of-manifold": {"manifold_overlap": 0.5},   # exercises fb1
     }
+    out = {}
+    for name, params in regimes.items():
+        multi, spatial = simulate(seed=seed, k=k, **params)
+        atac_true = np.asarray(spatial.obsm["ATAC_true"], dtype=float)
+        fit = pair_map(multi, k=k)
+        spatial_Z, _c, _l = project(fit, spatial)
+        atac_scout = impute(spatial_Z, fit)
+        atac_direct = _pls_direct(fit, spatial)
+        train_mean = np.asarray(multi.obsm["ATAC"], dtype=float).mean(axis=0)   # TRAINING mean (no leakage)
+        atac_mean = np.tile(train_mean, (atac_true.shape[0], 1))
+        atac_zero = np.zeros_like(atac_true)
+        out[name] = {
+            "scout": _perpeak_corr(atac_scout, atac_true),
+            "pls_direct": _perpeak_corr(atac_direct, atac_true),
+            "mean_impute": _perpeak_corr(atac_mean, atac_true),
+            "zero": _perpeak_corr(atac_zero, atac_true),
+            "rmse_scout": _rmse(atac_scout, atac_true),
+            "rmse_pls_direct": _rmse(atac_direct, atac_true),
+        }
+    return out
 
 
 def downsample_curve(seed=0, reads_list=(100, 50, 20, 10, 5)):

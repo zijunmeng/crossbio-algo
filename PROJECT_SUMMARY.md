@@ -1,6 +1,24 @@
-# crossbio-algo — 项目总结 (v0.2.2)
+# crossbio-algo — 项目总结 (v0.2.3)
 
-## v0.2.2（当前）—— DECLARED → TRACED → **TESTED**
+## v0.2.3（当前）—— EXECUTED → **ATTESTED**
+
+四轮评审（**8.1/10**）后,核心论点:**DECLARED→TRACED→EXECUTED→ATTACHED→VALIDATED→SCIENTIFICALLY SUPPORTED**。v0.2.2 做了 EXECUTED,但"tested"仍是 artifact 自己填的 `passed`。**v0.2.3:validator 不再相信 artifact 的自声明 —— 让真实测试结果替它说。**
+
+| 改了什么 | 证据 |
+|---|---|
+| **ATTESTED(中心)**: `crossbio attest` 跑 pytest→`results.json`(observed);`rule_test_link` 用真实结果核验 —— 自声明 `passed` 无 `results.json` 时只是 WARNING,observed FAILED 即使 artifact 说 passed 也 ERROR | 故意把 results.json 改 failed → validate-chain FAIL("observed outcome='failed'");11 scout 测试 attested 11 passed |
+| **source hash 闭包(§5)**: implementations 加 `module_sha256`(整文件),改 `_sinkhorn` 等 deps 也触发漂移 | validator 实测 |
+| **SCOUT intercept(§3)**: `impute` 加回 `mean_atac`(B_atac 在 centered ATAC 上拟合);RMSE + 非零 intercept DGP | `test_impute_intercept_MUTATION`:dropping mean_atac → RMSE 暴增 |
+| **benchmark(§4)**: mean baseline 改用训练集 ATAC(无 leakage);加 **PLS-direct(no-OT)** baseline;跑 fb3/fb1 regimes | **HONEST FINDING**:该 DGP 上 PLS-direct ≥ SCOUT(OT 没贡献)—— 不藏,如实记录 |
+| **README(§6)**: "T2 tool"→"research fixture";删 "invents not recombine";Quick viable 矛盾;loop root=data-audit;21→26 tests | grep 干净 |
+
+**全套 47 测试通过**(validator 29 + viability 5 + meta 2 + scout 11)。SCOUT 链 attested → VALID。
+
+下一步(v0.3,**ATTESTED→SCIENTIFICALLY SUPPORTED**):8 域 skill effectiveness benchmark 的完整盲评 + 结构化 estimand/symbol contract。不再加新 skill。
+
+---
+
+## v0.2.2 —— DECLARED → TRACED → **TESTED**
 
 三轮评审（**7.6/10**）后,核心论点:**DECLARED ≠ TRACED ≠ TESTED ≠ VALIDATED ≠ SCIENTIFICALLY SUPPORTED**。v0.2.1 只做到 DECLARED→TRACED(结构可追溯);v0.2.2 解决 **TRACED→TESTED** —— validator 现在能区分"声明"与"被验证"。
 

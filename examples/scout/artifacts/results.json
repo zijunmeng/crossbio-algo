@@ -1,0 +1,41 @@
+{
+  "generated_via": "crossbio attest",
+  "generated_at": "2026-08-09T12:23:22",
+  "git_commit": "4a22d0428e022d2f99dd168757c003dd82b16e82",
+  "env_hash": "cfcad9d2c879",
+  "tests": {
+    "examples/scout/test_scout.py::test_pair_map_recovers_shared_subspace": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_pair_map_is_pls_not_uncentered_MUTATION": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_pair_map_cross_modal_prediction_MUTATION": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_ot_projects_inmanifold_end_to_end_MUTATION": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_low_confidence_low_reads_AC2": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_low_confidence_out_of_manifold_AC1": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_impute_uses_one_B_atac": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_downsample_drift_and_lowconfidence_grow_AC2": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_benchmark_beats_naive": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_impute_intercept_MUTATION": {
+      "outcome": "passed"
+    },
+    "examples/scout/test_scout.py::test_benchmark_exercises_fb3_fb1_regimes": {
+      "outcome": "passed"
+    }
+  }
+}

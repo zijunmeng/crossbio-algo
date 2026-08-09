@@ -35,7 +35,9 @@ Each stage emits **`artifact.md`** (human-readable) **+ `artifact.json`** (machi
 
 7. **documented_limitation ≠ passed**: a criterion with `verification_mode == documented_limitation` MUST NOT have a linked test with `status == passed` — a known limitation cannot be "passed"; its status is `known_limitation`. Scientific software distinguishes *untested-by-design* from *verified*.
 
-8. **source hash integrity**: every `code.implementations` entry's `source_sha256` is recomputed from the actual source file (the `symbol`'s body, if given) on disk and compared. A mismatch means the code drifted from the declared artifact → invalid. (Real hashing from source — not hand-written strings compared by key name.)
+8. **source hash integrity**: every `code.implementations` entry's `source_sha256` (the symbol body) AND `module_sha256` (the whole file) are recomputed from disk and compared. The module hash catches edits to a symbol's *dependencies* (e.g. `_sinkhorn`, `_sqdist`) that don't change the symbol's own body (reviewer §5). A mismatch → invalid.
+
+9. **ATTESTED ≠ DECLARED (v0.2.3)**: a `code.tests` entry's `status` is NOT trusted as evidence. `crossbio attest <tests> --out results.json` runs pytest (`--junit-xml`) and records the OBSERVED outcomes; `rule_test_link` attests each test-requiring acceptance_criterion against `results.json`. With `results.json` present, an observed FAILED is an ERROR even if the artifact self-declares `status: passed`; without `results.json`, a self-declared `passed` is only a WARNING (unattested). **The artifact has no authority to declare itself tested** — DECLARED `passed` ≠ TESTED `passed`.
 
 `verification_mode` ∈ {`automated_test`, `simulation`, `benchmark`, `analytic_argument`, `documented_limitation`, `external_validation`}.
 

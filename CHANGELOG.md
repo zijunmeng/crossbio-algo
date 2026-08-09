@@ -2,6 +2,22 @@
 
 All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.2.3] — 2026-08-09
+
+### EXECUTED -> ATTESTED (reviewer round 4): the validator no longer trusts an artifact's self-declared 'passed'.
+- `crossbio attest <tests> --out results.json` runs pytest (--junit-xml) and records OBSERVED outcomes;
+  rule_test_link attests acceptance_criteria against results.json — a self-declared 'passed' with no
+  attested result is only a WARNING (unattested); an observed FAILED is an ERROR even if the artifact says passed.
+- source-hash closure (§5): implementations carry `module_sha256` (whole-file) alongside the symbol hash,
+  so edits to a module's dependencies (_sinkhorn/_sqdist) flip the hash even when the symbol body is unchanged.
+- SCOUT correctness (§2/§3/§4): impute now adds the ATAC intercept `mean_atac` back (B_atac was fit on centered
+  ATAC — v0.2.2 dropped it, invisible to Pearson); RMSE metric + nonzero-intercept DGP added. Benchmark mean
+  baseline uses TRAINING ATAC (no leakage); PLS-direct (no-OT) baseline added; runs fb3/fb1 regimes.
+- HONEST FINDING surfaced by the new baseline: on the synthetic DGP, PLS-direct >= SCOUT (OT does NOT help
+  here) — the fixture documents this rather than hiding it behind degenerate mean/zero baselines.
+- README drifts fixed (§6): SCOUT 'T2 tool' -> 'T2-targeted research fixture'; 'invents not recombine' retired;
+  Quick 'viable' contradiction; loop root = data-audit; test count 21 -> 26; validator 5 -> 8 rules.
+
 ## [0.2.2] — 2026-08-08
 
 ### Fixed (release blockers)

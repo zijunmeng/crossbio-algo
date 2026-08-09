@@ -351,7 +351,8 @@ def validate_chain(arts: list[dict], root: str = ".") -> list[Finding]:
     out += rule3_notation_consistency(arts)
     out += rule4_pseudocode_to_code(arts)
     out += rule_source_hash(arts, root)
-    out += rule_test_link(arts)
+    results = _load_results(root)
+    out += rule_test_link(arts, results)
     out += rule_verification_mode_status(arts)
     return out
 
@@ -406,30 +407,84 @@ def rule_source_hash(arts: list[dict], root: str = ".") -> list[Finding]:
                 f" {str(impl.get('source_sha256'))[:12]}.. != recomputed {recomputed[:12]}.."
                 f" (source drifted from the declared hash)",
                 code.get("artifact_id")))
+        # whole-file (module) hash: catches edits to this module's dependencies (e.g. _sinkhorn,
+        # _sqdist) that don't change this symbol's body (reviewer §5)
+        declared_mod = impl.get("module_sha256")
+        if declared_mod is not None:
+            if _source_sha256(path, None) != declared_mod:
+                out.append(Finding("source-hash", "ERROR",
+                    f"implementation {impl.get('module')!r}: module_sha256 drifted"
+                    f" (a dependency in {sf} changed — re-stamp)",
+                    code.get("artifact_id")))
     return out
 
 
-def rule_test_link(arts: list[dict]) -> list[Finding]:
-    """DECLARED vs TESTED (reviewer §3): an acceptance_criterion in a test-requiring mode
-    MUST have >=1 passing test linked to it."""
+def _load_results(root: str):
+    """Load <root>/results.json (observed test outcomes from `crossbio attest`) or None."""
+    p = os.path.join(root, "results.json")
+    if os.path.isfile(p):
+        try:
+            return json.load(open(p))
+        except Exception:
+            return None
+    return None
+
+
+def rule_test_link(arts: list[dict], results: Optional[dict] = None) -> list[Finding]:
+    """DECLARED vs ATTESTED (reviewer §2, v0.2.3): an acceptance_criterion in a test-requiring mode
+    MUST have a passing test. If results.json (from `crossbio attest`) is present, the OBSERVED pytest
+    outcome is authoritative — the artifact's self-declared status cannot overclaim. Without results.json
+    a declared 'passed' is only a WARNING (unattested), never trusted as TESTED."""
     spec = next((a for a in arts if a.get("stage") == "spec"), None)
     code = next((a for a in arts if a.get("stage") == "code"), None)
     if not spec or not code:
         return []
     acs = (spec.get("stage_fields") or {}).get("acceptance_criteria") or []
     tests = (code.get("stage_fields") or {}).get("tests") or []
+    rtests = (results or {}).get("tests") or {}
     out: list[Finding] = []
     for ac in acs:
         if not isinstance(ac, dict) or ac.get("verification_mode") not in TEST_REQUIRED_MODES:
             continue
         ac_id = ac.get("id")
         linked = [t for t in tests if isinstance(t, dict) and t.get("verifies_ac") == ac_id]
-        if not any(t.get("status") == "passed" for t in linked):
+        if not linked:
             out.append(Finding("test-link", "ERROR",
-                f"acceptance_criterion {ac_id!r} declares verification_mode={ac.get('verification_mode')!r}"
-                f" but no passing test links to it (DECLARED, not TESTED)",
+                f"acceptance_criterion {ac_id!r} ({ac.get('verification_mode')}) has no test linked",
                 spec.get("artifact_id")))
+            continue
+        attested_outcome = None
+        for t in linked:
+            nodeid = t.get("pytest_nodeid")
+            if nodeid and nodeid in rtests:
+                attested_outcome = rtests[nodeid].get("outcome")
+                break
+        if results is not None:
+            # ATTESTED: observed outcome is authoritative (code.json cannot self-declare passed)
+            if attested_outcome is None:
+                out.append(Finding("test-link", "ERROR",
+                    f"acceptance_criterion {ac_id!r}: no linked test has an observed result in results.json"
+                    f" (run `crossbio attest`)",
+                    spec.get("artifact_id")))
+            elif attested_outcome != "passed":
+                out.append(Finding("test-link", "ERROR",
+                    f"acceptance_criterion {ac_id!r}: observed test outcome={attested_outcome!r} (not passed)",
+                    spec.get("artifact_id")))
+        else:
+            # UNATTESTED: self-declared 'passed' is only a WARNING, never trusted
+            if any(t.get("status") == "passed" for t in linked):
+                out.append(Finding("test-link", "WARNING",
+                    f"acceptance_criterion {ac_id!r}: declared passed but UNATTESTED"
+                    f" (no results.json — run `crossbio attest`)",
+                    spec.get("artifact_id")))
+            else:
+                out.append(Finding("test-link", "ERROR",
+                    f"acceptance_criterion {ac_id!r}: no passing test linked",
+                    spec.get("artifact_id")))
     return out
+
+
+# (legacy rule_test_link removed — superseded by the ATTESTED version above (v0.2.3))
 
 
 def rule_verification_mode_status(arts: list[dict]) -> list[Finding]:

@@ -103,11 +103,12 @@
         "module_hashes": {"type": "object"},
         "test_results": {"type": "object"},
         "acceptance_status": {"type": "string"},
-        "implementations": {"type": "array", "items": {"type": "object", "required": ["module", "source_file", "source_sha256"], "properties": {
+        "implementations": {"type": "array", "items": {"type": "object", "required": ["module", "source_file", "source_sha256", "module_sha256"], "properties": {
           "module": {"type": "string"},
           "source_file": {"type": "string"},
           "symbol": {"type": "string"},
-          "source_sha256": {"type": "string"}
+          "source_sha256": {"type": "string"},
+          "module_sha256": {"type": "string"}
         }, "additionalProperties": true}},
         "tests": {"type": "array", "items": {"type": "object", "required": ["test_id", "verifies_ac", "status"], "properties": {
           "test_id": {"type": "string"},

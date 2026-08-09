@@ -62,7 +62,7 @@ def test_pair_map_cross_modal_prediction_MUTATION():
     X_atac = np.asarray(adata.obsm["ATAC"], float)
     fit = scout.pair_map(adata, k=5)
 
-    recon_correct = fit.Z @ fit.B_atac                 # the reconstruction check
+    recon_correct = fit.mean_atac + fit.Z @ fit.B_atac     # the reconstruction check (original scale)
     corr_correct = _column_corr(recon_correct, X_atac)
     # consistency guard (P0-4): impute on the paired scores == the reconstruction (same B_atac)
     assert np.allclose(scout.impute(fit.Z, fit), recon_correct), \
@@ -118,7 +118,8 @@ def test_impute_uses_one_B_atac():
     fit = scout.pair_map(adata, k=5)
     rng = np.random.default_rng(5)
     Zs = rng.normal(size=(30, 5))
-    assert np.allclose(scout.impute(Zs, fit), Zs @ fit.B_atac)
+    assert np.allclose(scout.impute(Zs, fit), fit.mean_atac + Zs @ fit.B_atac), \
+        "impute = intercept (mean_atac) + latent map (reviewer §3 intercept fix)"
 
 
 # ---------------- Task 4: downsample + benchmark ----------------
@@ -131,8 +132,33 @@ def test_downsample_drift_and_lowconfidence_grow_AC2():
 
 
 def test_benchmark_beats_naive():
-    """AC-4: SCOUT recovery > mean-impute and > zero (the naive baselines a fair benchmark must include)."""
+    """AC-bench (nominal regime): SCOUT > mean/zero baselines; PLS-direct reported so the OT
+    contribution is visible. Benchmark now runs regimes (fb1/fb3 actually exercised)."""
     res = scout.benchmark(seed=0, k=5)
-    assert res["scout"] > res["mean_impute"], f"SCOUT must beat mean-impute: {res}"
-    assert res["scout"] > res["zero"], f"SCOUT must beat zero: {res}"
-    assert res["scout"] > 0.3, f"SCOUT recovery should be meaningful: {res}"
+    assert {"nominal", "fb3-weak-pairing", "fb1-out-of-manifold"} <= set(res), list(res)
+    nom = res["nominal"]
+    assert nom["scout"] > nom["mean_impute"], f"nominal: SCOUT must beat mean-impute: {nom}"
+    assert nom["scout"] > nom["zero"], f"nominal: SCOUT must beat zero: {nom}"
+    assert nom["scout"] > 0.3, f"nominal: SCOUT recovery should be meaningful: {nom}"
+
+
+def test_impute_intercept_MUTATION():
+    """§3: with a nonzero ATAC intercept, impute MUST add mean_atac back; dropping it (the v0.2.2
+    bug) gives a systematic offset error that Pearson misses but RMSE catches."""
+    multi, spatial = scout.simulate(seed=11, atac_offset=5.0)
+    atac_true = np.asarray(spatial.obsm["ATAC_true"], dtype=float)
+    fit = scout.pair_map(multi, k=5)
+    spatial_Z, _c, _l = scout.project(fit, spatial)
+    err_correct = scout._rmse(scout.impute(spatial_Z, fit), atac_true)
+    err_no_intercept = scout._rmse(spatial_Z @ fit.B_atac, atac_true)   # the v0.2.2 bug
+    assert err_correct < err_no_intercept, f"intercept fix must reduce RMSE: {err_correct:.3f} vs {err_no_intercept:.3f}"
+    assert err_no_intercept > err_correct * 3, "dropping mean_atac should blow up absolute-scale RMSE"
+
+
+def test_benchmark_exercises_fb3_fb1_regimes():
+    """§4: ac-bench traces fb1+fb3, so benchmark MUST run those regimes (not just nominal)."""
+    res = scout.benchmark(seed=0, k=5)
+    for regime in ("fb3-weak-pairing", "fb1-out-of-manifold"):
+        assert regime in res, f"benchmark must exercise the {regime} regime (ac-bench traces it)"
+        assert np.isfinite(res[regime]["scout"])
+        assert np.isfinite(res[regime]["pls_direct"])

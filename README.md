@@ -14,7 +14,8 @@ Generic coding agents (Claude Code / Codex) can run analyses and write code, but
 
 ## The loop
 ```
-brainstorm  (N candidate ideas; dev-mode: algorithm-abstraction + cross-domain invention)
+data-and-estimand-audit  (GATE root — donor leakage / batch / sample-unit / ground truth; runs in every mode, incl. Quick)
+  → brainstorm  (N candidate ideas; dev-mode: algorithm-abstraction + cross-domain, utility-first)
   → topic-viability  (competitor DEEP-COMPARISON table; tier-aware T1–T4 score)
       ★ adversarial-panel-audit  (subagent panel, info-isolated, role-based)
   → algorithm-design  (4-step inventive; autonomous run + externalized reasoning)
@@ -30,8 +31,8 @@ The full loop is for a complete publication. For lighter tasks it is overkill, s
 
 | Mode | Runs | Skips | ~Time | Fits |
 |---|---|---|---|---|
-| **Quick** | data-and-estimand-audit → algorithm-design-lite (only the 4 load-bearing fields: `problem_definition` / `estimand` / `objective_or_likelihood` / `failure_boundaries`) → basic tests | brainstorm, viability, full 15-required+2-optional design, full spec, adversarial-panel-audit | ~30 min | "is this idea viable?", T3 learning, T4 internal one-off |
-| **Standard** | data-audit → topic-viability (deep-comparison + multi-dim score) → algorithm-design (full 15-required+2-optional contract) → spec-writing (kiro 3-phase) → 1 round adversarial-panel-audit | brainstorm (user already has the one idea) | ~half day | T2 tool paper — the default |
+| **Quick** | data-and-estimand-audit → algorithm-design-lite (only the 4 load-bearing fields: `problem_definition` / `estimand` / `objective_or_likelihood` / `failure_boundaries`) → basic tests | brainstorm, viability, full 15-required+2-optional design, full spec, adversarial-panel-audit | ~30 min | "is this idea buildable / sane to attempt?", T3 learning, T4 internal one-off |
+| **Standard** | data-audit → topic-viability (deep-comparison + multi-dim score) → algorithm-design (full 15-required+2-optional contract) → spec-writing (kiro 3-phase) → 1 round adversarial-panel-audit | brainstorm (user already has the one idea) | ~half day | "is this idea worth doing?" (lightest viability mode), T2 tool paper — the default |
 | **Publication** | the full closed loop: brainstorm (≥3 ideas) → viability → multi-round audit → formal design → kiro spec → benchmark → Publication Roadmap | nothing | ~multiple days | T1 top-tier / complete publication |
 
 **Mode selection**: user picks, or auto-infer from target tier — **T3/T4 → Quick, T2 → Standard, T1 → Publication** (user can override).
@@ -58,7 +59,7 @@ pip install -e ".[test]"
 |---|---|
 | `using-crossbio-algo` | **bootstrap**: the loop, when to trigger each, priority order |
 | `data-and-estimand-audit` | GATE: 审计数据+estimand（donor 泄漏/批次/样本单位/ground truth）在算法发明前 |
-| `brainstorm` | 5-round ideation; dev-mode = algorithm-abstraction + cross-domain (invents, doesn't recombine) |
+| `brainstorm` | 5-round ideation; dev-mode = algorithm-abstraction + cross-domain (utility-first, novelty explicit — see algorithm-design) |
 | `topic-viability-assessment` | competitor deep-comparison table (input/method/output/limitation/delta); tier-aware score; FORBID judging crowdedness from names |
 | `algorithm-design` | 4-step inventive design; autonomous + externalized reasoning; pause only at global forks |
 | `spec-writing` | kiro requirements → design → tasks; bite-sized TDD; acceptance ← failure_boundary; Publication Roadmap |
@@ -70,23 +71,23 @@ Each stage emits an `artifact.json` (schema: `crossbio_validate/schemas/stage-sc
 
 ```bash
 crossbio validate-chain <dir>     # schema + provenance + parent-chain + stage-order
-                                  # + fatal-gate + the 5 cross-stage content rules
+                                  # + fatal-gate + 8 content rules (5 cross-stage + 3 executable-trace)
 crossbio validate <one.json>      # one artifact: schema + provenance only
 crossbio validate-project <dir>   # scan a project dir, then validate-chain
 crossbio stamp <one.json>         # authoring helper: write the correct provenance_hash
 ```
 
-**What it catches** — design↔spec↔code drift: an estimand that changed silently between stages, a `failure_boundary` with no acceptance test tracing back to it, notation shapes that diverged (e.g. `X∈ℝ^{n×p}` in design vs `n×d` in spec), pseudocode that has no code counterpart, or a broken `parent_artifact_id` / `provenance_hash`. The kind of bug that previously slipped through to expert review.
+**What it catches** — design↔spec↔code drift: an estimand that changed silently between stages, a `failure_boundary` with no acceptance test tracing back to it, notation shapes that diverged (e.g. `X∈ℝ^{n×p}` in design vs `n×d` in spec), pseudocode that has no code counterpart, or a broken `parent_artifact_id` / `provenance_hash`. Plus the **executable-trace** rules (Phase 1): every acceptance criterion that declares `verification_mode ∈ {measured, statistical}` MUST link to ≥1 passing test (FB→AC→TEST→RESULT) — a declared-but-untested acceptance criterion is an ERROR, and a `documented_limitation` MUST NOT be marked `passed`; source hashes are recomputed from disk (not trusted from the declared string). The kind of bug that previously slipped through to expert review.
 
 **Run everything:**
 ```bash
-python -m pytest tests/           # 21 validator tests (tests/test_validator.py)
+python -m pytest tests/           # 26 validator tests (tests/test_validator.py)
                                   # + 9 scout tests (examples/scout/test_scout.py)
 ```
 CI (`.github/workflows/validate.yml`) runs the validator suite plus a skill-frontmatter + plugin-manifest + schema-parse sanity check on every push/PR.
 
 ## Demo
-`examples/scout/` — a full run on **"spatial multimodal data fusion"**: brainstorm (6 ideas) → viability (deep-comparison, 3 rejected) → audit (caught overclaim) → fallback → design → spec (kiro 3-file) → code → **9 tests green** (`examples/scout/test_scout.py`). Produces **SCOUT**, a T2 tool (paired-projection spatial RNA+ATAC integration on **PLS + optimal transport**, all-CPU).
+`examples/scout/` — a full run on **"spatial multimodal data fusion"**: brainstorm (6 ideas) → viability (deep-comparison, 3 rejected) → audit (caught overclaim) → fallback → design → spec (kiro 3-file) → code → **9 tests green** (`examples/scout/test_scout.py`). Produces **SCOUT** — a T2-targeted research fixture / end-to-end example (paired-projection spatial RNA+ATAC integration on **PLS + optimal transport**, all-CPU; coordinate-agnostic, no spatial regularization).
 
 ## Repository layout
 ```
@@ -102,7 +103,7 @@ crossbio-algo/
 │   └── _shared/{research-design-handoff.md, artifact-validation.md}
 ├── crossbio_validate/schemas/stage-schemas.json          CANONICAL machine schema ($defs + oneOf per stage)
 ├── crossbio_validate/                  validator CLI package (cli.py, core.py)
-├── tests/test_validator.py             21 validator tests (incl. deliberately-drifted RED cases)
+├── tests/test_validator.py             26 validator tests (incl. deliberately-drifted RED cases)
 ├── examples/scout/                     flagship: design/requirements/tasks.md + scout.py + test_scout.py (9 tests)
 └── .github/workflows/validate.yml      CI: validator suite + frontmatter/manifest/schema sanity
 ```
@@ -111,7 +112,7 @@ crossbio-algo/
 Computational biologists / bioinformatians. Generalizable to any domain where you **brainstorm → vet → design → spec** an algorithm or method.
 
 ## Status
-v0.2.1 — the loop is validated end-to-end on one direction (spatial omics), and the stage handoff is now **machine-checkable** via the `crossbio` validator (schema + chain + 5 cross-stage rules; 21 tests). Roadmap: per-skill baseline tests, multi-domain validation, real-data benchmarks. See `CHANGELOG.md` for the v0.1 → v0.2 → v0.2.1 path.
+v0.2.2 — the loop is validated end-to-end on one direction (spatial omics), and the stage handoff is now **machine-checkable** via the `crossbio` validator (schema + chain + 8 rules: 5 cross-stage + 3 executable-trace; 26 tests). Roadmap: per-skill baseline tests, multi-domain validation, real-data benchmarks. See `CHANGELOG.md` for the v0.1 → v0.2 → v0.2.2 path.
 
 ## License
 MIT.
