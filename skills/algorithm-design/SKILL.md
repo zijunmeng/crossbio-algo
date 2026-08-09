@@ -31,6 +31,28 @@ The stance is **Utility first, novelty explicit**:
 
 This stance replaces the older "Inventor, Not Librarian / inventing, not recombining" stance. The older stance induced pseudo-novelty: novelty-first designs that reinvented existing work and lost to it on the axis that actually mattered.
 
+## Complexity kill-switch (component_necessity) — simplest surviving model wins
+
+Many AI algorithm-generation systems only ever ADD modules (attention + graph + OT + VAE + …) and never ask whether each is justified. crossbio-algo inverts this: **every non-trivial component must justify itself against a simpler alternative, and if it cannot, it is removed or redesigned — not rescued by p-hacking a favorable regime.**
+
+For each non-trivial component in the `proposed_algorithm`, emit a `component_necessity` entry (carried in the code/spec artifact; checked by the validator):
+
+```
+component_necessity:
+  component: <e.g. optimal_transport>
+  simpler_alternative: <e.g. direct_pls_projection>
+  predefined_regimes: [<listed BEFORE running the benchmark>]
+  retain_if: "<component beats the alternative on >=1 pre-registered regime, OR improves calibrated uncertainty>"
+  current_result:
+    decision: retain | remove_or_redesign
+    reason: "<evidence vs the alternative across the regimes>"
+```
+
+Discipline:
+- Regimes are **pre-registered** (stated before the benchmark) — you cannot invent a regime post-hoc to save a component.
+- If `decision == remove_or_redesign`, the validator emits a WARNING nudging action. The artifact is *honest* (it recorded the decision); the framework does not let an unjustified component linger silently.
+- This is the inverse of the over-claim discipline: the system doesn't just prevent false "novelty", it prevents unjustified **complexity**. (SCOUT demonstrates it: its OT step is flagged `remove_or_redesign` because PLS-direct >= SCOUT on every pre-registered regime.)
+
 ## Two Classes of Decision
 
 ### A. User decisions (collect ONCE, up front — these the user can actually judge)

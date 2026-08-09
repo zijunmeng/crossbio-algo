@@ -338,6 +338,25 @@ def rule4_pseudocode_to_code(arts: list[dict]) -> list[Finding]:
     return out
 
 
+def rule_component_necessity(arts: list[dict]) -> list[Finding]:
+    """Complexity kill-switch (reviewer v0.2.4 §7): if a `component_necessity` entry's decision is
+    not 'retain', the framework nudges removal/redesign — 'simplest surviving model wins'. Advisory
+    (WARNING): the artifact is HONEST (it recorded the decision); the rule flags it for action
+    rather than letting an unjustified component linger."""
+    out: list[Finding] = []
+    for a in arts:
+        for cn in (a.get("stage_fields") or {}).get("component_necessity") or []:
+            if not isinstance(cn, dict):
+                continue
+            decision = (cn.get("current_result") or {}).get("decision") or cn.get("decision")
+            if decision and decision != "retain":
+                out.append(Finding("component-necessity", "WARNING",
+                    f"component {cn.get('component')!r}: decision={decision!r} — simplest-surviving-model"
+                    f" discipline: remove or redesign it (do NOT p-hack a favorable regime)",
+                    a.get("artifact_id")))
+    return out
+
+
 def validate_chain(arts: list[dict], root: str = ".") -> list[Finding]:
     schema = load_schema()
     out: list[Finding] = []
@@ -353,7 +372,9 @@ def validate_chain(arts: list[dict], root: str = ".") -> list[Finding]:
     out += rule_source_hash(arts, root)
     results = _load_results(root)
     out += rule_test_link(arts, results)
+    out += rule_source_attestation(arts, results, root)
     out += rule_verification_mode_status(arts)
+    out += rule_component_necessity(arts)
     return out
 
 
@@ -453,23 +474,24 @@ def rule_test_link(arts: list[dict], results: Optional[dict] = None) -> list[Fin
                 f"acceptance_criterion {ac_id!r} ({ac.get('verification_mode')}) has no test linked",
                 spec.get("artifact_id")))
             continue
-        attested_outcome = None
-        for t in linked:
-            nodeid = t.get("pytest_nodeid")
-            if nodeid and nodeid in rtests:
-                attested_outcome = rtests[nodeid].get("outcome")
-                break
+        # collect ALL attested outcomes for linked tests (no break) — multi-test aggregation (reviewer v0.2.4 §1)
+        attested = [rtests[t["pytest_nodeid"]].get("outcome")
+                    for t in linked if t.get("pytest_nodeid") in rtests]
+        agg = ac.get("test_aggregation", "all")  # all (default) | any
         if results is not None:
-            # ATTESTED: observed outcome is authoritative (code.json cannot self-declare passed)
-            if attested_outcome is None:
+            # ATTESTED: observed outcomes are authoritative (code.json cannot self-declare passed)
+            if not attested:
                 out.append(Finding("test-link", "ERROR",
                     f"acceptance_criterion {ac_id!r}: no linked test has an observed result in results.json"
                     f" (run `crossbio attest`)",
                     spec.get("artifact_id")))
-            elif attested_outcome != "passed":
-                out.append(Finding("test-link", "ERROR",
-                    f"acceptance_criterion {ac_id!r}: observed test outcome={attested_outcome!r} (not passed)",
-                    spec.get("artifact_id")))
+            else:
+                ok = all(o == "passed" for o in attested) if agg == "all" else any(o == "passed" for o in attested)
+                if not ok:
+                    out.append(Finding("test-link", "ERROR",
+                        f"acceptance_criterion {ac_id!r} (aggregation={agg}): observed outcomes={attested}"
+                        f" do not satisfy {agg}-passed",
+                        spec.get("artifact_id")))
         else:
             # UNATTESTED: self-declared 'passed' is only a WARNING, never trusted
             if any(t.get("status") == "passed" for t in linked):
@@ -485,6 +507,30 @@ def rule_test_link(arts: list[dict], results: Optional[dict] = None) -> list[Fin
 
 
 # (legacy rule_test_link removed — superseded by the ATTESTED version above (v0.2.3))
+
+
+def rule_source_attestation(arts: list[dict], results: Optional[dict], root: str = ".") -> list[Finding]:
+    """SOURCE-BOUND ATTESTATION (reviewer v0.2.4): the observed results must be FOR THE CURRENT
+    SOURCE. results.source_snapshot hashes the impl + test files at attest time; if any changed
+    since, the attestation is STALE -> ERROR. This closes the 'reuse an old results.json after
+    editing the code' hole (git_commit alone can't bind, since attest runs pre-commit)."""
+    if not results or not results.get("source_snapshot"):
+        return []
+    code = next((a for a in arts if a.get("stage") == "code"), None)
+    aid = code.get("artifact_id") if code else None
+    out: list[Finding] = []
+    for f, expected in results["source_snapshot"].items():
+        p = f if os.path.isabs(f) else os.path.join(root, f)
+        if not os.path.isfile(p):
+            out.append(Finding("source-attestation", "ERROR",
+                f"attestation-bound file {f!r} no longer exists — re-attest", aid))
+            continue
+        cur = hashlib.sha256(open(p, "rb").read()).hexdigest()
+        if cur != expected:
+            out.append(Finding("source-attestation", "ERROR",
+                f"STALE ATTESTATION: {f!r} changed since results.json was generated"
+                f" (re-run `crossbio attest` against the current source)", aid))
+    return out
 
 
 def rule_verification_mode_status(arts: list[dict]) -> list[Finding]:

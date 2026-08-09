@@ -1,8 +1,20 @@
 {
   "generated_via": "crossbio attest",
-  "generated_at": "2026-08-09T12:23:22",
-  "git_commit": "4a22d0428e022d2f99dd168757c003dd82b16e82",
-  "env_hash": "cfcad9d2c879",
+  "generated_at": "2026-08-09T13:45:57",
+  "git_commit": "eb9cc47326d81489212e3d23314dbefd62b4b13d",
+  "env_fingerprint": "dcaa3326948a",
+  "env": {
+    "pytest": "6.2.2",
+    "numpy": "1.26.4",
+    "scipy": "1.11.4",
+    "scikit-learn": "1.2.2",
+    "jsonschema": "4.25.1",
+    "pyyaml": "5.4.1"
+  },
+  "source_snapshot": {
+    "../test_scout.py": "d1ff88af7d5b9159fdd06d4c9382a8d3a49e6a4cee87753aede1e2fcea4dc589",
+    "../scout.py": "e4e6a7448c6d0c2d9813c68ad59e8c81edaaee3c2403874f27a91e39db09cb6f"
+  },
   "tests": {
     "examples/scout/test_scout.py::test_pair_map_recovers_shared_subspace": {
       "outcome": "passed"

@@ -397,3 +397,20 @@ def test_unattested_declared_passed_is_only_a_warning():
     findings = core.validate_chain([da(), design(), _ac_spec(), c], root=td)
     assert "test-link" not in rules(errs(findings))  # not an ERROR
     assert any(f.rule == "test-link" and f.severity == "WARNING" for f in findings)  # is a WARNING
+
+
+# ---------------- Phase A (v0.2.4): SOURCE-BOUND attestation ----------------
+def test_source_attestation_stale_after_edit(tmp_path):
+    """results.source_snapshot binds the attestation to the current source; editing a bound file
+    without re-attesting -> STALE -> ERROR (closes the 'reuse old results after editing code' hole)."""
+    import hashlib
+    (tmp_path / "src.py").write_text("def f():\n    return 1\n")
+    h = hashlib.sha256((tmp_path / "src.py").read_bytes()).hexdigest()
+    (tmp_path / "results.json").write_text(json.dumps({"source_snapshot": {"src.py": h}, "tests": {}}))
+    c = code()
+    c["stage_fields"]["implementations"] = []  # isolate the source-attestation rule
+    core.stamp(c)
+    chain = [da(), design(), spec(), c]
+    assert "source-attestation" not in rules(errs(core.validate_chain(chain, root=str(tmp_path))))
+    (tmp_path / "src.py").write_text("def f():\n    return 2  # changed\n")  # edit source, don't re-attest
+    assert "source-attestation" in rules(errs(core.validate_chain(chain, root=str(tmp_path))))

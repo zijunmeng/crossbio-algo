@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "crossbio-algo",
   "displayName": "CrossBio Algorithm Development",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Cross-domain bioinformatics algorithm generation loop: brainstorm → competitor deep-comparison → adversarial audit → algorithm-design → executable spec (kiro). Installs scientific-honesty discipline a generic agent won't proactively do.",
   "author": {"name": "zijunmeng", "url": "https://github.com/zijunmeng"},
   "license": "MIT",

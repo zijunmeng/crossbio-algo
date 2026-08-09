@@ -33,11 +33,14 @@ jobs:
         run: python -m pytest tests/ -q
       - name: SCOUT example tests
         run: cd examples/scout && PYTHONPATH=. python -m pytest test_scout.py -q
-      - name: SCOUT artifact chain validates (editable install)
+      - name: ATTEST SCOUT fresh (against the CURRENT checkout — closes the stale-results hole)
+        run: crossbio attest examples/scout/test_scout.py --bind examples/scout/scout.py --root . --out examples/scout/artifacts/results.json
+      - name: SCOUT artifact chain validates (attested against fresh results)
         run: crossbio validate-chain examples/scout/artifacts
-      - name: Wheel build + install test (catches schema-not-in-package, §7)
+      - name: Wheel build + install test (catches schema-not-in-package)
         run: |
           pip install build
           python -m build --wheel
           pip install --force-reinstall --no-deps dist/*.whl
+          crossbio attest examples/scout/test_scout.py --bind examples/scout/scout.py --root . --out examples/scout/artifacts/results.json
           crossbio validate-chain examples/scout/artifacts

@@ -2,6 +2,22 @@
 
 All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.2.4] — 2026-08-09
+
+### OBSERVED -> SOURCE-BOUND ATTESTED (reviewer round 5): the attestation is now bound to the CURRENT SOURCE.
+- `crossbio attest --bind <file>` records a `source_snapshot` (hashes of impl + test files at attest time);
+  `rule_source_attestation` recomputes current hashes and FAILS if any changed since attest — closes the
+  'reuse an old results.json after editing code' hole (git_commit alone can't bind, since attest runs pre-commit).
+- env fingerprint upgraded from sha256(python --version) to python+platform+arch+key-package versions.
+- multi-test aggregation (§1): acceptance_criterion.test_aggregation (all default / any); rule_test_link no
+  longer breaks on the first attested test.
+- test code is now hashed (test target auto-bound) — weakening a test assertion flips the snapshot (§2).
+- CI now runs `crossbio attest` fresh against the current checkout BEFORE validate-chain.
+- Complexity kill-switch: `component_necessity` field + `rule_component_necessity` — when a component is shown
+  <= a simpler alternative across pre-registered regimes, decision=remove_or_redesign and the framework warns
+  ('simplest surviving model wins'). SCOUT's OT is flagged (PLS-direct >= SCOUT).
+- README/pyproject drifts fixed (Status 0.2.4, SCOUT 11 tests, verification_mode enum, '5 rules'->'8').
+
 ## [0.2.3] — 2026-08-09
 
 ### EXECUTED -> ATTESTED (reviewer round 4): the validator no longer trusts an artifact's self-declared 'passed'.

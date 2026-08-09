@@ -2,7 +2,7 @@
   "artifact_id": "scout-code",
   "stage": "code",
   "parent_artifact_id": "scout-spec",
-  "skill_version": "0.2.3",
+  "skill_version": "0.2.4",
   "stage_fields": {
     "module_hashes": {
       "pair_map": "6d1a12a323b8",
@@ -68,7 +68,23 @@
         "status": "known_limitation",
         "pytest_nodeid": null
       }
+    ],
+    "component_necessity": [
+      {
+        "component": "optimal_transport",
+        "simpler_alternative": "direct_pls_projection",
+        "predefined_regimes": [
+          "nominal",
+          "fb3-weak-pairing",
+          "fb1-out-of-manifold"
+        ],
+        "retain_if": "SCOUT (PLS+OT) > PLS-direct on >=1 pre-registered regime",
+        "current_result": {
+          "decision": "remove_or_redesign",
+          "reason": "PLS-direct >= SCOUT on all 3 regimes (nominal 1.00 vs 0.97; out-of-manifold 1.00 vs 0.38) - OT contribution not demonstrated"
+        }
+      }
     ]
   },
-  "provenance_hash": "1216d46b5ab7"
+  "provenance_hash": "244f9ac4ba29"
 }

@@ -1,6 +1,26 @@
-# crossbio-algo — 项目总结 (v0.2.3)
+# crossbio-algo — 项目总结 (v0.2.4)
 
-## v0.2.3（当前）—— EXECUTED → **ATTESTED**
+## v0.2.4（当前）—— OBSERVED → **SOURCE-BOUND ATTESTED** + complexity kill-switch
+
+五轮评审（**8.3/10**）抓到一个漂亮的 provenance 漏洞:`results.json` 的 `git_commit` 是 parent(attest 在 commit 前跑),且 validator 从不绑定 source snapshot —— 可"改代码+复用旧 results.json"。**v0.2.4:把 OBSERVED RESULT 绑到 CURRENT SOURCE。**
+
+| 改了什么 | 证据 |
+|---|---|
+| **source-bound attestation(中心)** | `crossbio attest --bind <file>` 记录 `source_snapshot`(impl+test 文件 hash);`rule_source_attestation` 重算当前 hash,改了不复 attestation → STALE ERROR | 改 scout.py → "STALE ATTESTATION" ERROR;restore → VALID |
+| **test code hash(§2)** | test target 自动入 snapshot;改 assertion(>0.8→>-999)flip hash → re-attest 要求 | 同上机制 |
+| **env fingerprint** | 从 `sha256(python --version)` 升级为 python+platform+arch+pytest/numpy/scipy/sklearn/jsonschema/pyyaml 版本 | results.json `env_fingerprint` + `env` |
+| **multi-test aggregation(§1)** | AC.`test_aggregation`(all default/any);不再 break-on-first | rule_test_link |
+| **fresh CI attest** | CI 在 validate-chain 前跑 `crossbio attest`(对当前 checkout),不再信 committed results.json | validate.yml |
+| **complexity kill-switch(§7)** | `component_necessity` 字段 + `rule_component_necessity`:组件 ≤ 更简替代 → decision=remove_or_redesign → WARNING("simplest surviving model wins") | **SCOUT 的 OT 被标 remove_or_redesign**(PLS-direct ≥ SCOUT)→ validate-chain 出 1 WARNING |
+| **README/pyproject drifts(§3-4)** | Status 0.2.4、SCOUT 11 tests、verification_mode enum 修正、"5 rules"→"8" | grep 干净 |
+
+**全套 48 测试通过**(validator 30 + viability 5 + meta 2 + scout 11)。SCOUT 链 attested + source-bound → 0 error / 1 warning(OT kill-switch)。
+
+下一步(v0.3,**SCIENTIFICALLY SUPPORTED**):8 域 skill effectiveness benchmark 的完整盲评 + 结构化 estimand/symbol contract。不加新 skill。
+
+---
+
+## v0.2.3 —— EXECUTED → **ATTESTED**
 
 四轮评审（**8.1/10**）后,核心论点:**DECLARED→TRACED→EXECUTED→ATTACHED→VALIDATED→SCIENTIFICALLY SUPPORTED**。v0.2.2 做了 EXECUTED,但"tested"仍是 artifact 自己填的 `passed`。**v0.2.3:validator 不再相信 artifact 的自声明 —— 让真实测试结果替它说。**
 
