@@ -1,0 +1,25 @@
+{
+  "domain": "network biology / regulatory inference",
+  "non_scanpy": true,
+  "expected_stages": ["data-audit", "design", "spec"],
+  "traps": [
+    {"id": "T1", "rubric_dim": "estimand_correctness",
+     "description": "the estimand is a TF->target edge confidence / probability, not 'the network'; directed & signed if possible",
+     "caught_looks_like": "states estimand as directed TF->target edge scores"},
+    {"id": "T2", "rubric_dim": "benchmark_fairness",
+     "description": "no gold standard; ChIP-seq is partial and biased toward accessible regions — using it as 'truth' is a circular/weak benchmark",
+     "caught_looks_like": "flags ChIP-seq as partial truth; uses perturbation/KO data or simulation where possible"},
+    {"id": "T3", "rubric_dim": "statistical_assumptions",
+     "description": "co-expression != regulation; correlation/granger on observational data confounds shared regulators, cell-state, and dropout",
+     "caught_looks_like": "names co-expression != regulation; uses a causal/conditional framework"},
+    {"id": "T4", "rubric_dim": "failure_boundary_quality",
+     "description": "dropout + sparsity break co-estimation of correlations; lowly-expressed TFs are undetectable",
+     "caught_looks_like": "names dropout/sparsity as a failure boundary"},
+    {"id": "T5", "rubric_dim": "benchmark_fairness",
+     "description": "must compare to SCENIC+/GRNBoost2 AND a naive co-expression/correlation baseline, on a benchmark with known regulation (e.g. BEELINE)",
+     "caught_looks_like": "names a GRN tool + naive co-expression + a known-regulation benchmark"},
+    {"id": "T6", "rubric_dim": "estimand_correctness",
+     "description": "GRNs are cell-type-specific; a single global network conflates cell types — must stratify or condition on cell type",
+     "caught_looks_like": "conditions on / stratifies by cell type"}
+  ]
+}

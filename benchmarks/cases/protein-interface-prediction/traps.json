@@ -1,0 +1,25 @@
+{
+  "domain": "proteomics / structural bioinformatics",
+  "non_scanpy": true,
+  "expected_stages": ["data-audit", "design", "spec"],
+  "traps": [
+    {"id": "T1", "rubric_dim": "estimand_correctness",
+     "description": "the estimand is a per-residue-pair interface probability (or a ranked contact list at a precision threshold), not 'predict the interface'",
+     "caught_looks_like": "states the estimand as per-pair probability / ranked contacts at a precision cutoff"},
+    {"id": "T2", "rubric_dim": "data_leakage",
+     "description": "homologous complexes (or same family) split across train/test leak evolutionary signal; test proteins homologous to training templates",
+     "caught_looks_like": "splits by sequence-identity/family threshold (<30%); excludes homologs"},
+    {"id": "T3", "rubric_dim": "benchmark_fairness",
+     "description": "interface residues are rare -> class imbalance; ROC is misleading, must use PR-AUC / precision@k",
+     "caught_looks_like": "uses PR-AUC/precision@k, explicitly rejects ROC for the imbalanced setting"},
+    {"id": "T4", "rubric_dim": "failure_boundary_quality",
+     "description": "unbound->bound conformational change (induced fit) means the unbound structure mislocates the interface",
+     "caught_looks_like": "names conformational-change as a failure boundary"},
+    {"id": "T5", "rubric_dim": "benchmark_fairness",
+     "description": "must compare to a docking/contact tool AND a naive coevolution/surface-area baseline",
+     "caught_looks_like": "names a docking/coevolution baseline + a naive surface baseline"},
+    {"id": "T6", "rubric_dim": "data_leakage",
+     "description": "template-based prediction where the test complex's template is in the training set",
+     "caught_looks_like": "excludes the query's own/template complexes from training"}
+  ]
+}

@@ -17,20 +17,21 @@ For one research-direction prompt, produce the algorithm design under each mode:
 - **Standard** — `data-audit` + `topic-viability` + full `algorithm-design` + `spec` + 1 audit.
 - **Publication** — full loop.
 
-## Domains (case matrix) — deliberately NOT all scanpy
-| case | domain | why included |
-|---|---|---|
-| sc-rna-imputation | single-cell | the home field (baseline) |
-| spatial-mapping | spatial omics | SCOUT's domain |
-| **phylo-recombination** | **phylogenetics / virology** | non-scanpy; a viral-genome algorithm (the "virus developer" generality test) |
-| variant-calling | genomics | non-scanpy; BCFtools/GATK neighbor |
-| metagenomics-strain | metagenomics | non-scanpy |
-| protein-interface | proteomics / sequences | non-scanpy |
-| survival-clinical-ml | clinical ML | leakage-prone; tests data-audit |
-| network-grn | network biology | graph/causal |
+## Domains (case matrix) — 6 of 8 deliberately non-scanpy (the generality test)
+Each case lives at `cases/<domain>/` with `prompt.md` (agent-visible research ask, NO answer-key) +
+`traps.json` (agent-invisible answer key: trap id → rubric dim). `run_benchmark.py check` enforces
+that no `prompt.md` leaks its traps.
 
-Each case is a real research-direction prompt with known failure traps (the grader checks whether
-each trap was caught).
+| case | domain | scanpy? |
+|---|---|---|
+| **phylo-recombination** | phylogenetics / virology | no — the "virus developer" test |
+| **variant-calling** | genomics (low-depth tumor) | no |
+| **metagenomics-strain-tracking** | metagenomics (longitudinal) | no |
+| **protein-interface-prediction** | proteomics / structural | no |
+| **survival-clinical-ml** | clinical ML | no — leakage-prone |
+| **network-grn-inference** | network biology / causal | no |
+| scrna-imputation | single-cell | yes — home-field |
+| spatial-celltype-deconv | spatial omics | yes — home-field |
 
 ## Rubric (dependent variable) — `rubric.json`
 10 dimensions, each scored 0–3 with anchors. A "trap" dimension is binary-ish (caught / missed).
@@ -47,22 +48,38 @@ each trap was caught).
 | reproducibility | seed/env/data-version/pinned deps? | loose `scanpy>=1.10` |
 | overall_usefulness | would a senior reviewer advance it? | cheerleading |
 
-## Methodology
-1. Fix a prompt per case (with known traps).
-2. Generate outputs under each mode (the skills are deterministic given the prompt + mode; record seed).
-3. Grade each output on the rubric. **Blinded** = the grader does not know which mode produced which output.
-4. Report per-dimension delta (mode − no-skill) and a weighted total.
+## Two evidence streams
+**(1) Objective — bias-free, reproducible (primary).** Does the run emit a `crossbio_validate`-passing
+artifact chain (`data-audit→design→spec`)? `run_benchmark.py objective <rundirs>` runs the validator.
+Standard mode is *defined* to emit such a chain (estimand continuity / no orphan failure_boundary /
+no DECLARED-without-TESTED enforced); a no-skill agent does not. This is non-LLM evidence that the
+skills produce structural discipline — independent of any grader.
 
-## Honest limitations (MUST state — mirrors adversarial-panel-audit's stance)
-- **Same-model grader.** In this pilot the grader is the same model that authored the outputs — it
-  is NOT blinded and shares bias. The numbers below are a *methodology demonstration*, not evidence.
-  The real benchmark needs **external blinded domain experts** (one per domain) grading anonymized
-  outputs. Until then, treat scores as illustrative.
-- **Single pilot case.** One case (phylo-recombination) does not establish cross-domain
-  generalization; the full 8-domain matrix is the next milestone.
-- **Author-of-both bias.** The same agent wrote no-skill and Standard outputs; it may strawman the
-  no-skill side. Mitigation in the real eval: different sessions/agents per mode + external graders.
+**(2) Rubric — same-model, mode-blinded (secondary).** A grader scores the run's `output.md` on the
+10-dim `rubric.json` WITHOUT knowing the mode → `grading.json`. `run_benchmark.py summary` aggregates.
+Labeled: same-model, not human-expert.
+
+## Methodology + confound fixes (vs the v0.2 pilot)
+1. **Confound (a) prompt/traps split** — `prompt.md` holds only the ask; `traps.json` is the
+   agent-invisible answer key. `run_benchmark.py check` fails if a prompt leaks a trap.
+2. **Confound (b) non-determinism** — each run records `meta.json` (model, mode, skill_files_loaded,
+   run_id). Multi-run = multiple run dirs (single run in this pilot).
+3. **Confound (c) strawman no-skill** — no-skill and Standard are generated in **independent
+   subagent sessions**; the no-skill session sees ONLY the prompt (no skills, no `CLAUDE.md`, no
+   traps) and is instructed to be genuinely competent. Same-model bias remains (documented), not
+   eliminated.
+4. The **grader is blinded to mode** (receives `output.md` with no mode label).
+
+## Honest limitations (MUST state)
+- Rubric stream is **same-model** (glm-5.2), mode-blinded — NOT human-expert, NOT unbiased.
+  Author-of-both + author-as-grader bias persists (mitigated by independent sessions + blinded
+  grading, not eliminated).
+- **Objective stream is bias-free** and is the primary v0.3 evidence.
+- Pilot = 2 domains (phylo-recombination + scrna-imputation) × {no-skill, Standard}, single run
+  each. Not multi-run, not all 8, not human-graded.
 
 ## Status
-- ✅ Methodology + rubric + harness (`run_case.py`) + 1 pilot (phylo-recombination, non-scanpy).
-- ⬜ Full 8-domain matrix + external blinded grading — the next milestone (v0.3).
+- ✅ Harness (`run_benchmark.py`: check / objective / summary), rubric, 8 cases seeded, 2-domain pilot run.
+- ⬜ **Final milestone (v0.3 complete):** recruit blinded domain experts; run all 8 ×
+  {no-skill, Standard, Publication} × N runs; report quality + token/time cost. That is the
+  publishable "method paper".

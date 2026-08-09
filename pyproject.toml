@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crossbio-algo-validator"
-version = "0.2.5"
+version = "0.3.0"
 description = "crossbio-algo machine-checkable artifact validator (schema + chain + 8 content rules (5 cross-stage + 3 executable-trace))"
 readme = "README.md"
 requires-python = ">=3.9"

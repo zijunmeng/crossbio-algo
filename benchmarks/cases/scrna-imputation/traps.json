@@ -1,0 +1,25 @@
+{
+  "domain": "single-cell (scRNA imputation) — home-field baseline",
+  "non_scanpy": false,
+  "expected_stages": ["data-audit", "design", "spec"],
+  "traps": [
+    {"id": "T1", "rubric_dim": "estimand_correctness",
+     "description": "the estimand is the counterfactual true count at a masked/dropout position, not 'denoise the matrix'",
+     "caught_looks_like": "states the counterfactual-count estimand explicitly"},
+    {"id": "T2", "rubric_dim": "statistical_assumptions",
+     "description": "droplet UMI zeros are NOT automatically zero-inflated dropout; assuming MNAR by default is wrong (Svensson 2020). State the missingness assumption with justification",
+     "caught_looks_like": "does NOT default to MNAR; cites/justifies the zero assumption per platform"},
+    {"id": "T3", "rubric_dim": "benchmark_fairness",
+     "description": "mask-then-impute validation is only fair if the mask is INDEPENDENT of expression; expression-coupled masking hides the failure",
+     "caught_looks_like": "uses an expression-independent mask + checks leakage; reports per-regime"},
+    {"id": "T4", "rubric_dim": "failure_boundary_quality",
+     "description": "the kNN graph mis-estimates similarity in ultra-sparse regimes (<500 genes) -> over-smoothing",
+     "caught_looks_like": "names an ultra-sparse graph-collapse boundary"},
+    {"id": "T5", "rubric_dim": "benchmark_fairness",
+     "description": "must compare to scVI/MAGIC/SAVER AND naive mean/kNN/copy-input baselines, same mask + compute",
+     "caught_looks_like": "names SOTA imputers + naive mean/kNN/copy baselines"},
+    {"id": "T6", "rubric_dim": "estimand_correctness",
+     "description": "under true MNAR the count at a masked position is not identifiable without an instrument — must state this",
+     "caught_looks_like": "includes an identifiability analysis (identifiable under MAR, not under MNAR)"}
+  ]
+}

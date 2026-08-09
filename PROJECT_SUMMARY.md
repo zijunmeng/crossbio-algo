@@ -1,6 +1,33 @@
-# crossbio-algo — 项目总结 (v0.2.5)
+# crossbio-algo — 项目总结 (v0.3.0)
 
-## v0.2.5（当前）—— SOURCE-BOUND ATTESTED 封洞(逆向攻击后)
+## v0.3.0（当前）—— skill-effectiveness benchmark(从 framework 跨向 methodology)
+
+六轮 hardening 把 evidence chain 做到 SOURCE-BOUND ATTESTED 后,v0.3 回答评审的核心大问题:**这 7 个 skill 真的让 AI 设计的生信算法更科学吗(更少 estimand/泄漏/benchmark/假创新/不必要复杂度错误),而不只是 chain 更整齐?**
+
+| 交付 | 内容 |
+|---|---|
+| **harness** | `benchmarks/run_benchmark.py`:`check`(confound 守卫,prompt 不漏 traps)、`objective`(bias-free:run 是否产出 validator-passing artifact 链)、`summary` |
+| **8 域 case** | 6 个 non-scanpy(phylo/variant/metagenomics/protein/survival/network)+ 2 home-field(scrna/spatial),每个 = `prompt.md`(无 trap)+ `traps.json`(答案钥) |
+| **confound 修复** | prompt/traps 拆分(check 强制)、run `meta.json`(model/mode/skills)、no-skill 独立 session(无 skills/traps) |
+| **pilot(2 域)** | phylo-recombination + scrna-imputation × {no-skill, Standard} |
+
+### Pilot 结果(`benchmarks/PILOT_REPORT.md`)
+**证据流 1 — OBJECTIVE(bias-free,主)**:Standard 两域都产出 validator-passing artifact 链(VALID,0 error);no-skill 两域都**无** artifact(absent)。非-LLM 证据:skill 结构性强制的纪律(estimand 连续/无孤儿 fb/leakage 审计),vanilla agent 不产。
+
+**证据流 2 — RUBRIC(同模型 glm-5.2,mode-blinded,次)**:
+| case | no-skill | Standard | Δ |
+|---|---|---|---|
+| phylo-recombination | 0.88 / 5-of-6 traps | 1.00 / 6-of-6 | +0.12 |
+| scrna-imputation | 0.71 / 1-of-6 traps | 0.98 / 6-of-6 | +0.27 |
+
+差距正好在 skill 针对的纪律维度:**phylo no-skill 漏 clade 泄漏(T2)+ 可复现性**(其余 5/6 都抓到——不是 strawman,使 Standard 在泄漏/reproducibility 上的优势更可信);**scrna no-skill 默认 MNAR(T2)、expression-coupled mask 无泄漏检查(T3)、漏 naive baseline(T5)**。
+
+### 诚实的边界
+rubric 是同模型(mode-blinded,非人评、非盲专家);单 run;2/8 域;无 Publication 模式。**robust 信号是 objective 流(valid 链 vs absent),rubric 量级小。** 完整里程碑:招募盲评领域专家 × 8 域 × {no-skill/Standard/Publication} × N runs + token/time 成本——那才是可发表的 method paper。
+
+---
+
+## v0.2.5 —— SOURCE-BOUND ATTESTED 封洞(逆向攻击后)
 
 六轮评审（**8.4/10**）反过来攻 SOURCE-BOUND 机制,找到 5 个可绕过的洞。v0.2.5 全封:
 

@@ -1,0 +1,25 @@
+{
+  "domain": "metagenomics (longitudinal strain tracking)",
+  "non_scanpy": true,
+  "expected_stages": ["data-audit", "design", "spec"],
+  "traps": [
+    {"id": "T1", "rubric_dim": "estimand_correctness",
+     "description": "the estimand is strain-abundance + per-timepoint SNV trajectory, not 'identify strains'; time is the structure",
+     "caught_looks_like": "states estimand as a strain-mixture + SNV-trajectory over time"},
+    {"id": "T2", "rubric_dim": "data_leakage",
+     "description": "train/test split that shares timepoints or uses future timepoints to predict earlier ones = temporal leakage",
+     "caught_looks_like": "split respects temporal order; no future-leakage"},
+    {"id": "T3", "rubric_dim": "benchmark_fairness",
+     "description": "strain 'truth' from the SAME metagenomic caller (or a correlated one) is circular ground truth",
+     "caught_looks_like": "uses a simulation/in-vitro mix with known strains as truth, or flags circularity"},
+    {"id": "T4", "rubric_dim": "failure_boundary_quality",
+     "description": "per-sample depth is very low + sparse; strain signal collapses below coverage threshold",
+     "caught_looks_like": "names a coverage/depth failure boundary + mechanism"},
+    {"id": "T5", "rubric_dim": "benchmark_fairness",
+     "description": "must compare to a strain-caller (e.g. StrainPhlAn/inStrain) AND a naive single-strain / BAF-threshold baseline",
+     "caught_looks_like": "names a SOTA strain tool + a naive baseline"},
+    {"id": "T6", "rubric_dim": "statistical_assumptions",
+     "description": "horizontal gene transfer / contamination / cross-sample index hopping can mimic strain turnover",
+     "caught_looks_like": "names HGT/contamination as a confound"}
+  ]
+}

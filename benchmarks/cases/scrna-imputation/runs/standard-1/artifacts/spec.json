@@ -1,0 +1,428 @@
+{
+  "artifact_id": "scrna-impute-spec-001",
+  "parent_artifact_id": "scrna-impute-design-001",
+  "stage": "spec",
+  "skill_version": "0.3.0",
+  "model": "glm-5.2",
+  "stage_fields": {
+    "module_interfaces": {
+      "preprocess_filter": {
+        "responsibility": "Filter ultra-sparse cells (FB2 guard), normalize library size (FB4 guard), select HVGs, PCA -> adata.obsm['X_pca']. Sets adata.obs['impute_confidence']=0 for sub-threshold cells so they are kept out of downstream graph construction.",
+        "inputs": [
+          {
+            "name": "adata",
+            "type": "AnnData",
+            "shape": "n_cells x n_genes",
+            "field": "adata.X (raw counts)"
+          },
+          {
+            "name": "min_genes",
+            "type": "int",
+            "shape": "scalar",
+            "domain_note": "FB2 threshold; default 500"
+          },
+          {
+            "name": "n_hvg",
+            "type": "int",
+            "shape": "scalar",
+            "default": 2000
+          },
+          {
+            "name": "n_pca",
+            "type": "int",
+            "shape": "scalar",
+            "default": 50
+          }
+        ],
+        "outputs": [
+          {
+            "name": "adata",
+            "type": "AnnData",
+            "shape": "n_cells x n_genes",
+            "field": "adata.obs['impute_confidence'] (n_cells,), adata.obsm['X_pca'] (n_cells x n_pca), adata.uns['lib']"
+          },
+          {
+            "name": "lib",
+            "type": "np.ndarray",
+            "shape": "n_cells",
+            "field": "adata.uns['lib']"
+          }
+        ],
+        "deps": [
+          "scanpy>=1.10.0",
+          "numpy>=1.26",
+          "scipy>=1.11"
+        ]
+      },
+      "build_cell_graph": {
+        "responsibility": "Build the row-normalized kNN cell-similarity graph W (cosine on X_pca) and the symmetric normalized Laplacian L = I - (W+W^T)/2. Stores W -> adata.obsp['connectivities'], L -> adata.obsp['laplacian'].",
+        "inputs": [
+          {
+            "name": "adata",
+            "type": "AnnData",
+            "shape": "n_cells x n_genes",
+            "field": "adata.obsm['X_pca']"
+          },
+          {
+            "name": "n_neighbors",
+            "type": "int",
+            "shape": "scalar",
+            "default": 15
+          }
+        ],
+        "outputs": [
+          {
+            "name": "W",
+            "type": "scipy.sparse.csr_matrix",
+            "shape": "n_cells x n_cells",
+            "field": "adata.obsp['connectivities']"
+          },
+          {
+            "name": "L",
+            "type": "scipy.sparse.csr_matrix",
+            "shape": "n_cells x n_cells",
+            "field": "adata.obsp['laplacian']"
+          }
+        ],
+        "deps": [
+          "scanpy>=1.10.0",
+          "scipy>=1.11"
+        ]
+      },
+      "graph_lowpass_basis": {
+        "responsibility": "Truncated Lanczos eigendecomposition of L for the k lowest-frequency eigenvectors U[:, :k] (the graph low-pass subspace). Bottleneck step; O(k*n_cells*n_neighbors).",
+        "inputs": [
+          {
+            "name": "L",
+            "type": "scipy.sparse.csr_matrix",
+            "shape": "n_cells x n_cells",
+            "field": "adata.obsp['laplacian']"
+          },
+          {
+            "name": "k",
+            "type": "int",
+            "shape": "scalar",
+            "default": 64
+          }
+        ],
+        "outputs": [
+          {
+            "name": "U",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_cells",
+            "field": "adata.obsm['graph_fourier_basis'] (n_cells x k truncated)"
+          },
+          {
+            "name": "eigvals",
+            "type": "np.ndarray",
+            "shape": "scalar",
+            "field": "adata.uns['graph_eigvals'] (length k)"
+          }
+        ],
+        "deps": [
+          "scipy>=1.11",
+          "numpy>=1.26"
+        ]
+      },
+      "fit_dispersion": {
+        "responsibility": "Per-gene NB dispersion phi[g] fit on observed nonzero entries with library-size offset, by method-of-moments.",
+        "inputs": [
+          {
+            "name": "X",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_genes",
+            "field": "adata.X (raw counts)"
+          },
+          {
+            "name": "lib",
+            "type": "np.ndarray",
+            "shape": "n_cells",
+            "field": "adata.uns['lib']"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "phi",
+            "type": "np.ndarray",
+            "shape": "n_genes",
+            "field": "adata.var['nb_dispersion']"
+          }
+        ],
+        "deps": [
+          "scipy>=1.11",
+          "numpy>=1.26"
+        ]
+      },
+      "em_impute_loop": {
+        "responsibility": "Generalized EM with LATENT mask M (marginalized, not observed). Mask-E-step computes soft responsibilities r[c,g]=P(M=0|X,Y,alpha,beta); Y-M-step solves smoothness-regularized expected-NB-MLE for Y with Y[:,masked] in span(U[:,:k]) (damped Newton, trust region -- NB log-lik only locally concave); Dropout-M-step Newton on logistic dropout (alpha, beta). Monotone ascent on the mask-marginalized Q; stop at relative change < 1e-4 or 50 iters.",
+        "inputs": [
+          {
+            "name": "adata",
+            "type": "AnnData",
+            "shape": "n_cells x n_genes",
+            "field": "adata.X, adata.uns['lib'], adata.var['nb_dispersion']"
+          },
+          {
+            "name": "U",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_cells",
+            "field": "adata.obsm['graph_fourier_basis']"
+          },
+          {
+            "name": "lam",
+            "type": "float",
+            "shape": "scalar",
+            "default": 1.0,
+            "domain_note": "graph smoothness weight lambda"
+          },
+          {
+            "name": "max_iter",
+            "type": "int",
+            "shape": "scalar",
+            "default": 50
+          },
+          {
+            "name": "tol",
+            "type": "float",
+            "shape": "scalar",
+            "default": 0.0001
+          }
+        ],
+        "outputs": [
+          {
+            "name": "Y",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_genes",
+            "field": "adata.layers['imputed']"
+          },
+          {
+            "name": "alpha_dropout",
+            "type": "float",
+            "shape": "scalar",
+            "field": "adata.uns['alpha_dropout']"
+          },
+          {
+            "name": "beta_dropout",
+            "type": "float",
+            "shape": "scalar",
+            "field": "adata.uns['beta_dropout']"
+          },
+          {
+            "name": "P",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_genes",
+            "field": "adata.layers['dropout_prob']"
+          },
+          {
+            "name": "Y_var",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_genes",
+            "field": "adata.layers['impute_variance']"
+          },
+          {
+            "name": "mask_posterior",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_genes",
+            "field": "adata.layers['mask_posterior'] (r[c,g] = P(M=0|X,Y,alpha,beta), the latent-mask responsibilities)"
+          }
+        ],
+        "deps": [
+          "scipy>=1.11",
+          "numpy>=1.26"
+        ]
+      },
+      "diagnose_mnar": {
+        "responsibility": "Read beta_dropout_hat + CI from em_impute_loop; set adata.uns['mnar_flag'] / adata.uns['impute_confidence'] per FB1 guard. The MNAR self-diagnostic -- the novelty axis.",
+        "inputs": [
+          {
+            "name": "beta_dropout",
+            "type": "float",
+            "shape": "scalar",
+            "field": "adata.uns['beta_dropout']"
+          },
+          {
+            "name": "beta_ci",
+            "type": "np.ndarray",
+            "shape": "scalar",
+            "field": "adata.uns['beta_dropout_ci'] (length 2)"
+          },
+          {
+            "name": "tau_mnar",
+            "type": "float",
+            "shape": "scalar",
+            "default": 0.5,
+            "domain_note": "FB1 flag threshold on |beta_dropout|"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "mnar_flag",
+            "type": "bool",
+            "shape": "scalar",
+            "field": "adata.uns['mnar_flag']"
+          },
+          {
+            "name": "impute_confidence",
+            "type": "float",
+            "shape": "scalar",
+            "field": "adata.uns['impute_confidence'] (scalar summary)"
+          }
+        ],
+        "deps": [
+          "numpy>=1.26"
+        ]
+      },
+      "gene_bandwidth_diagnostic": {
+        "responsibility": "Per-gene graph-frequency spectrum: compute energy of each gene's observed signal in the high-graph-frequency bands (above cutoff); widen k or fall back to NB-mean for genes whose energy is concentrated high (FB3 guard).",
+        "inputs": [
+          {
+            "name": "X",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_genes",
+            "field": "adata.X (log-normalized)"
+          },
+          {
+            "name": "U",
+            "type": "np.ndarray",
+            "shape": "n_cells x n_cells",
+            "field": "adata.obsm['graph_fourier_basis']"
+          },
+          {
+            "name": "k",
+            "type": "int",
+            "shape": "scalar",
+            "default": 64
+          }
+        ],
+        "outputs": [
+          {
+            "name": "graph_bandwidth",
+            "type": "np.ndarray",
+            "shape": "n_genes",
+            "field": "adata.var['graph_bandwidth']"
+          },
+          {
+            "name": "high_freq_mask",
+            "type": "np.ndarray",
+            "shape": "n_genes",
+            "field": "adata.var['high_freq_gene']"
+          }
+        ],
+        "deps": [
+          "numpy>=1.26"
+        ]
+      }
+    },
+    "acceptance_criteria": [
+      {
+        "id": "AC-FB1-1",
+        "traces_to": [
+          "FB1"
+        ],
+        "verification_mode": "simulation",
+        "test_aggregation": "all",
+        "statement": "WHEN the DGP runs the MNAR sweep with beta in {-1.0, -2.0} THE SYSTEM SHALL set adata.uns['mnar_flag']=True for the strong-MNAR regime (beta=-2.0) and report adata.uns['beta_dropout'] within +/-0.2 of the ground-truth beta. Pass line: |beta_dropout_hat - beta_true| < 0.2 for >=4 of 5 seeds at beta_true=-2.0; mnar_flag==True for all 5 seeds."
+      },
+      {
+        "id": "AC-FB1-2",
+        "traces_to": [
+          "FB1"
+        ],
+        "verification_mode": "simulation",
+        "test_aggregation": "all",
+        "statement": "WHEN the DGP runs the MAR/null regime (beta=0) THE SYSTEM SHALL set adata.uns['mnar_flag']=False (correctly NOT flag MAR as MNAR). Pass line: mnar_flag==False for >=4 of 5 seeds at beta_true=0."
+      },
+      {
+        "id": "AC-FB1-3",
+        "traces_to": [
+          "FB1"
+        ],
+        "verification_mode": "documented_limitation",
+        "statement": "IF mnar_flag==True THEN THE SYSTEM SHALL document in adata.uns['mnar_disclaimer'] that the masked-entry counts are NOT identifiable without an external instrument (spike-ins / paired full-length), and impute_confidence SHALL be scaled by 1/(1+|beta_dropout_hat|). This is a known-limitation disclosure, NOT a 'pass' -- the method cannot make MNAR-recovered counts identifiable."
+      },
+      {
+        "id": "AC-FB2-1",
+        "traces_to": [
+          "FB2"
+        ],
+        "verification_mode": "automated_test",
+        "test_aggregation": "all",
+        "statement": "WHEN a cell has fewer than min_genes (default 500) genes detected THE SYSTEM SHALL set adata.obs['impute_confidence']=0 for that cell and exclude it from neighborhood-graph construction. Verified by an automated unit test: construct an AnnData with one sub-threshold cell and assert it is flagged + held out."
+      },
+      {
+        "id": "AC-FB2-2",
+        "traces_to": [
+          "FB2"
+        ],
+        "verification_mode": "simulation",
+        "test_aggregation": "all",
+        "statement": "WHEN the DGP sweeps n_detected_genes in {100, 500, 2000} THE SYSTEM SHALL report recovery RMSE split by regime, and the n_detected=2000 regime RMSE SHALL be lower than n_detected=100 by >=30%. Pass line: median RMSE(2000) < 0.7 * median RMSE(100) across 5 seeds."
+      },
+      {
+        "id": "AC-FB3-1",
+        "traces_to": [
+          "FB3"
+        ],
+        "verification_mode": "automated_test",
+        "test_aggregation": "all",
+        "statement": "WHEN a gene's observed signal has >50% of its graph-frequency energy in the top half of the spectrum THE SYSTEM SHALL flag it via adata.var['high_freq_gene']=True and report adata.var['graph_bandwidth']. Verified by an automated unit test on a synthetic block-low-frequency + block-high-frequency signal."
+      },
+      {
+        "id": "AC-FB4-1",
+        "traces_to": [
+          "FB4"
+        ],
+        "verification_mode": "automated_test",
+        "test_aggregation": "all",
+        "statement": "WHEN library sizes differ across cells by >5x THE SYSTEM SHALL build the kNN graph on PCA of the depth-normalized matrix (NOT raw X) and SHALL include library size as an NB offset. Verified by an automated unit test: construct two depth-confounded batches; assert adata.obsp['connectivities'] is built from adata.obsm['X_pca'] (normalized), not adata.X (raw)."
+      },
+      {
+        "id": "AC-FB4-2",
+        "traces_to": [
+          "FB4"
+        ],
+        "verification_mode": "analytic_argument",
+        "statement": "The NB mean SHALL be lib[c] * q[c,g] (library size as offset), so depth differences are NOT absorbed as biological signal. Justified analytically by inspecting the NB log-likelihood in em_impute_loop: the lib offset decouples depth from the rate parameter q."
+      },
+      {
+        "id": "AC-BENCH-1",
+        "traces_to": [
+          "FB1",
+          "FB2",
+          "FB3"
+        ],
+        "verification_mode": "benchmark",
+        "test_aggregation": "all",
+        "statement": "WHEN evaluated on the mask-then-impute benchmark with an expression-INDEPENDENT Bernoulli(p=0.2) mask THE SYSTEM SHALL achieve held-out-count RMSE strictly lower than ALL four naive baselines (all-zero, global-mean, per-gene-mean, kNN-mean) AND no worse than the weakest SOTA imputer (MAGIC), under matched compute and 5 seeds. Leakage check: |coef| of mask-indicator ~ log-expression < 0.05."
+      },
+      {
+        "id": "AC-BENCH-2",
+        "traces_to": [
+          "FB1"
+        ],
+        "verification_mode": "benchmark",
+        "test_aggregation": "all",
+        "statement": "WHEN evaluated in the null regime (true zeros injected) THE SYSTEM SHALL report a false-imputation rate (fraction of true-zero positions filled with nonzero counts) no higher than the per-gene-mean baseline. The method must not hallucinate counts where the truth is zero."
+      },
+      {
+        "id": "AC-COMPLEX-1",
+        "traces_to": [
+          "FB2"
+        ],
+        "verification_mode": "automated_test",
+        "test_aggregation": "all",
+        "statement": "WHEN n_cells >= 10000 THE SYSTEM SHALL use truncated Lanczos eigendecomposition (scipy.sparse.linalg.eigsh, k=64, which='SM') NOT full eigendecomposition, and SHALL complete the full impute pipeline on n_cells=10000, n_genes=2000 in <30 min wall-clock on a single CPU core with <16 GB RAM. Verified by a scalability smoke test."
+      }
+    ],
+    "pseudocode_hashes": {
+      "preprocess_filter": "sha256-placeholder-recompute-on-authoring",
+      "build_cell_graph": "sha256-placeholder-recompute-on-authoring",
+      "graph_lowpass_basis": "sha256-placeholder-recompute-on-authoring",
+      "fit_dispersion": "sha256-placeholder-recompute-on-authoring",
+      "em_impute_loop": "sha256-placeholder-recompute-on-authoring",
+      "diagnose_mnar": "sha256-placeholder-recompute-on-authoring",
+      "gene_bandwidth_diagnostic": "sha256-placeholder-recompute-on-authoring"
+    }
+  },
+  "provenance_hash": "014124989f1b"
+}

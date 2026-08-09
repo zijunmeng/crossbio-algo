@@ -1,0 +1,25 @@
+{
+  "domain": "genomics (low-depth tumor WGS)",
+  "non_scanpy": true,
+  "expected_stages": ["data-audit", "design", "spec"],
+  "traps": [
+    {"id": "T1", "rubric_dim": "estimand_correctness",
+     "description": "the estimand is a per-locus somatic-variant posterior / FDR-controlled call set, not 'call variants'; VAF and genotype quality must be quantified",
+     "caught_looks_like": "states the estimand as a per-locus posterior/call with a controlled FDR; names VAF"},
+    {"id": "T2", "rubric_dim": "data_leakage",
+     "description": "train/test must not share the patient's normal; the panel of normals must not contain the test tumor's matched normal — leakage of germline/patient signal",
+     "caught_looks_like": "draws a leakage graph; splits at patient level; excludes the test patient from the panel"},
+    {"id": "T3", "rubric_dim": "statistical_assumptions",
+     "description": "at low depth the sequencing-error rate exceeds the true variant rate; must model base quality + error, not assume errors are negligible",
+     "caught_looks_like": "explicit error model tied to depth/base-quality; flags error>signal as the regime"},
+    {"id": "T4", "rubric_dim": "failure_boundary_quality",
+     "description": "low purity / high contamination / copy-number states break the diploid VAF assumption — a failure boundary",
+     "caught_looks_like": "names purity/contamination/CNA as a degradation condition + mechanism"},
+    {"id": "T5", "rubric_dim": "benchmark_fairness",
+     "description": "must compare to Mutect2/Strelka2 AND a naive threshold baseline on a held-out truth set (GIAB/SEQC), not just self-validation",
+     "caught_looks_like": "names the SOTA callers + a naive baseline + an independent truth set"},
+    {"id": "T6", "rubric_dim": "reproducibility",
+     "description": "reference genome version + alignment pipeline must be pinned; VCF output standardized",
+     "caught_looks_like": "pins reference build + aligner; standardized VCF"}
+  ]
+}

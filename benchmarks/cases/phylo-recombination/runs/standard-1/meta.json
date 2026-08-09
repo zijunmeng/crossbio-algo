@@ -1,0 +1,21 @@
+{
+  "case": "phylo-recombination",
+  "mode": "standard",
+  "run_id": 1,
+  "model": "glm-5.2",
+  "model_version_note": "subagent inherits the session model; non-deterministic across runs",
+  "generated_at_note": "single run; multi-run not yet executed (v0.3 milestone)",
+  "skill_files_loaded": [
+    "skills/using-crossbio-algo/SKILL.md",
+    "skills/data-and-estimand-audit/SKILL.md",
+    "skills/topic-viability-assessment/SKILL.md",
+    "skills/algorithm-design/SKILL.md",
+    "skills/spec-writing/SKILL.md",
+    "skills/adversarial-panel-audit/SKILL.md",
+    "skills/_shared/research-design-handoff.md",
+    "skills/_shared/artifact-validation.md"
+  ],
+  "input": "prompt.md + the Standard-mode skill chain",
+  "condition": "treatment — crossbio-algo Standard mode (data-audit → viability → design → spec → 1 audit)",
+  "bias_note": "same model as the no-skill run + the grader; independent session, no trap visibility"
+}

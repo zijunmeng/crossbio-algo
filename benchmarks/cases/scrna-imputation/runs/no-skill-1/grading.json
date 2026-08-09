@@ -1,0 +1,8 @@
+{
+  "grader_note": "same-model (glm-5.2), MODE-BLINDED (anonymized /tmp/gN.md; domain known, mode not). NOT human-expert evidence.",
+  "scores": {"problem_definition": 3, "estimand_correctness": 2, "data_leakage": 1, "statistical_assumptions": 2, "benchmark_fairness": 2, "novelty_honesty": 3, "implementability": 3, "failure_boundary_quality": 2, "reproducibility": 2, "overall_usefulness": 2},
+  "traps_caught": ["T1"],
+  "traps_missed": ["T2", "T3", "T4", "T5", "T6"],
+  "biggest_strength": "Precise counterfactual-count estimand with calibrated per-entry NB uncertainty and an honest 5-class competitor/novelty analysis.",
+  "biggest_gap": "Validation mask is expression-coupled (nonzero entries only) with no leakage check, and the missingness model silently assumes zero-inflation/MNAR with no per-platform justification or identifiability analysis."
+}

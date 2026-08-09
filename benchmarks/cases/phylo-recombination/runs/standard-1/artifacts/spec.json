@@ -1,0 +1,346 @@
+{
+  "artifact_id": "recomb-spec",
+  "stage": "spec",
+  "parent_artifact_id": "recomb-design",
+  "skill_version": "0.3.0",
+  "model": "glm-5.2",
+  "created_at": "2026-08-09",
+  "stage_fields": {
+    "module_interfaces": {
+      "load_msa": {
+        "responsibility": "Read the multiple-sequence alignment with BioPython AlignIO; drop all-gap columns; encode as uint8 (A,C,G,T,- -> 0..4).",
+        "in": {
+          "name": "alignment_path",
+          "type": "str (path to FASTA/Clustal)",
+          "format": "BioPython AlignIO"
+        },
+        "out": {
+          "name": "A",
+          "type": "numpy.uint8 array",
+          "shape": "n×L"
+        }
+      },
+      "window_similarity_profile": {
+        "responsibility": "Tile the alignment into n_win overlapping windows; for one genome i compute its normalized similarity S_i to all other genomes per window.",
+        "in": [
+          {
+            "name": "A",
+            "type": "numpy.uint8 array",
+            "shape": "n×L"
+          },
+          {
+            "name": "i",
+            "type": "int",
+            "domain": "genome index"
+          },
+          {
+            "name": "win_size",
+            "type": "int",
+            "default": 300
+          },
+          {
+            "name": "win_step",
+            "type": "int",
+            "default": 150
+          }
+        ],
+        "out": {
+          "name": "S_i",
+          "type": "numpy.float32 array",
+          "shape": "n_win×n"
+        }
+      },
+      "discover_parent_clusters": {
+        "responsibility": "Aggregate per-window kNN graphs across windows; spectral normalized-cut to discover C parent clusters, whole-genome assignments, and per-cluster per-column consensus (requires the alignment A, NOT just the similarity profiles — a length-L consensus cannot be reconstructed from similarities alone).",
+        "in": [
+          {
+            "name": "S_profiles",
+            "type": "iterator of S_i arrays, each shaped n_win×n",
+            "shape": "n_win×n"
+          },
+          {
+            "name": "A",
+            "type": "numpy.uint8 alignment array (needed for the per-column consensus Q)",
+            "shape": "n×L"
+          }
+        ],
+        "out": [
+          {
+            "name": "M",
+            "type": "numpy.int32 array (hard cluster labels)",
+            "shape": "n×C"
+          },
+          {
+            "name": "C",
+            "type": "int",
+            "domain": "number of parent clusters"
+          },
+          {
+            "name": "Q",
+            "type": "numpy.float32 array (per-cluster per-column consensus base distributions)",
+            "shape": "C×L"
+          }
+        ]
+      },
+      "per_genome_membership_path": {
+        "responsibility": "For one genome i, compute the per-window parent-cluster membership sequence c_i by argmax mean-similarity-to-cluster.",
+        "in": [
+          {
+            "name": "S_i",
+            "type": "numpy.float32 array",
+            "shape": "n_win×n"
+          },
+          {
+            "name": "M",
+            "type": "numpy.int32 array",
+            "shape": "n×C"
+          }
+        ],
+        "out": {
+          "name": "c_i",
+          "type": "numpy.int32 array",
+          "shape": "n_win"
+        }
+      },
+      "detect_change_points": {
+        "responsibility": "Run the dynamic-programming segmented-likelihood solver on c_i with a BIC penalty; return candidate breakpoint coordinates and segment assignments.",
+        "in": [
+          {
+            "name": "c_i",
+            "type": "numpy.int32 array",
+            "shape": "n_win"
+          },
+          {
+            "name": "lambda_bic",
+            "type": "float",
+            "default": "log(n_win)"
+          },
+          {
+            "name": "S_i",
+            "type": "numpy.float32 array (soft profile for the LRT)",
+            "shape": "n_win×n"
+          }
+        ],
+        "out": [
+          {
+            "name": "B_i",
+            "type": "numpy.int32 array (breakpoint window-indices)",
+            "shape": "k_i"
+          },
+          {
+            "name": "k_i",
+            "type": "int",
+            "domain": "number of breakpoints (0 => non-recombinant candidate)"
+          },
+          {
+            "name": "P",
+            "type": "numpy.int32 array (parent-cluster id for each of the k_i+1 segments)",
+            "shape": "k_i"
+          },
+          {
+            "name": "lrt_stat",
+            "type": "float",
+            "domain": "segmented-vs-null likelihood ratio"
+          }
+        ]
+      },
+      "discordance_test": {
+        "responsibility": "The identifiability correction: for each candidate recombinant, build a small NJ tree per segment (Bio.Phylo, JC69) and run a two-tree-vs-one-tree local likelihood-ratio test; keep breakpoints only where the two-tree model wins (Bonferroni-corrected).",
+        "in": [
+          {
+            "name": "A_segments",
+            "type": "list of two numpy.uint8 sub-alignments (the two recombinant segments at the breakpoint); each is a column-slice of A whose widths sum to L",
+            "shape": "n×L"
+          },
+          {
+            "name": "B_i",
+            "type": "numpy.int32 array",
+            "shape": "k_i"
+          }
+        ],
+        "out": [
+          {
+            "name": "is_discordant",
+            "type": "bool",
+            "domain": "True => recombination-supported, False => likely homoplasy"
+          },
+          {
+            "name": "p_value",
+            "type": "float",
+            "domain": "Bonferroni-corrected LRT p-value"
+          }
+        ]
+      },
+      "null_calibration": {
+        "responsibility": "On the null DGP (no recombination), calibrate the LRT threshold to hold genome-level FPR at alpha; convert LRT statistics to calibrated p-values; Benjamini-Hochberg across genomes.",
+        "in": {
+          "name": "null_lrt_distribution",
+          "type": "numpy.float32 vector of LRT statistics sampled from the null DGP",
+          "shape": "k_i"
+        },
+        "out": {
+          "name": "threshold",
+          "type": "float",
+          "domain": "LRT cutoff for mosaic call at target alpha"
+        }
+      },
+      "report_genome": {
+        "responsibility": "Assemble per-genome output: mosaic label z_i, breakpoint coordinates (in nt), parent assignments, confidence, low-signal/saturation flags.",
+        "in": [
+          {
+            "name": "k_i",
+            "type": "int"
+          },
+          {
+            "name": "is_discordant",
+            "type": "bool"
+          },
+          {
+            "name": "B_i",
+            "type": "numpy.int32 array (window indices -> nt coordinates)",
+            "shape": "k_i"
+          },
+          {
+            "name": "P",
+            "type": "numpy.int32 array (parent-cluster id per segment)",
+            "shape": "k_i"
+          },
+          {
+            "name": "lrt_stat",
+            "type": "float"
+          },
+          {
+            "name": "saturation_flag",
+            "type": "bool"
+          }
+        ],
+        "out": [
+          {
+            "name": "z_i",
+            "type": "int in {0,1}",
+            "domain": "mosaic label"
+          },
+          {
+            "name": "breakpoints_nt",
+            "type": "list[int]",
+            "domain": "breakpoint genomic coordinates"
+          },
+          {
+            "name": "confidence",
+            "type": "float",
+            "domain": "calibrated 1 - p_value"
+          },
+          {
+            "name": "flags",
+            "type": "dict",
+            "domain": "{low_signal, saturated, gappy, near_identical_parents}"
+          }
+        ]
+      }
+    },
+    "acceptance_criteria": [
+      {
+        "id": "AC-FB-HOMOPLASY-1",
+        "traces_to": [
+          "FB-HOMOPLASY"
+        ],
+        "verification_mode": "simulation",
+        "spec": "WHEN the ADVERSARIAL-HOMOPLASY DGP regime is run (convergent tracts injected, NO true recombination) THEN THE SYSTEM SHALL achieve a genome-level false-positive rate <= 1%, AND the discordance_test SHALL classify >=90% of homoplasy tracts as is_discordant=False. EARS: IF convergent-evolution tracts are injected THEN THE SYSTEM SHALL NOT label them mosaic."
+      },
+      {
+        "id": "AC-FB-HOMOPLASY-2",
+        "traces_to": [
+          "FB-HOMOPLASY"
+        ],
+        "verification_mode": "automated_test",
+        "spec": "WHEN a per-window saturation diagnostic (Shannon entropy of the substitution pattern) exceeds the saturation threshold THEN THE SYSTEM SHALL set saturation_flag=True for that genome/window AND SHALL down-weight any candidate breakpoint falling in a saturated window. EARS: WHEN window substitution entropy > tau_sat THEN THE SYSTEM SHALL flag saturation."
+      },
+      {
+        "id": "AC-FB-SHORT-TRACT",
+        "traces_to": [
+          "FB-SHORT-TRACT"
+        ],
+        "verification_mode": "simulation",
+        "spec": "WHEN the ADVERSARIAL-SHORT-TRACT sweep runs (tract lengths {win_size/4, win_size/2, win_size, 2*win_size}) THEN THE SYSTEM SHALL report a detection floor (the minimum tract length at which recall >= 50%) and THAT floor SHALL be >= win_size/2 (documented limitation, not hidden). EARS: WHEN tract_length < win_size THEN THE SYSTEM MAY report 'no breakpoint detected' AND SHALL log the floor."
+      },
+      {
+        "id": "AC-FB-WEAK-CLUSTERING",
+        "traces_to": [
+          "FB-WEAK-CLUSTERING"
+        ],
+        "verification_mode": "simulation",
+        "spec": "WHEN the ADVERSARIAL-WEAK sweep runs (sister-clade divergence {0.1%, 0.5%, 1%, 5%}) THEN THE SYSTEM SHALL report a power-vs-divergence curve AND SHALL flag near_identical_parents=True for recombinants between clades < 0.5% diverged (the not-identifiable regime). EARS: IF between-parent divergence < 0.5% THEN THE SYSTEM SHALL flag near_identical_parents (not silently call non-recombinant)."
+      },
+      {
+        "id": "AC-FB-GAPPY",
+        "traces_to": [
+          "FB-GAPPY"
+        ],
+        "verification_mode": "simulation",
+        "spec": "WHEN the ADVERSARIAL-GAPPY sweep runs (gap/N density {0, 5%, 20%, 40%}) THEN THE SYSTEM SHALL gate per-window informative-site-count (windows below threshold masked) AND breakpoints falling in gappy windows SHALL be flagged gappy=True. EARS: WHEN per-window informative-site-count < tau_info THEN THE SYSTEM SHALL mask the window."
+      },
+      {
+        "id": "AC-FB-RATE-HET",
+        "traces_to": [
+          "FB-RATE-HET"
+        ],
+        "verification_mode": "simulation",
+        "spec": "WHEN the null DGP is generated WITH a Gamma-distributed site-rate prior (shape in {0.1, 0.5, 1.0}, no recombination, no convergence — pure rate heterogeneity over known hypervariable regions) THEN THE SYSTEM SHALL hold genome-level FPR <= 1% (rate-heterogeneity alone must not be called recombination), AND the discordance-test null SHALL be one-tree-WITH-rate-heterogeneity (not one-tree-JC69). EARS: WHEN substitution rates vary along the genome without recombination THEN THE SYSTEM SHALL NOT call false breakpoints. If the +I+Gamma-calibrated null still over-segments hypervariable regions, this is reported as a documented_limitation rather than hidden."
+      },
+      {
+        "id": "AC-NULL",
+        "traces_to": [
+          "FB-HOMOPLASY"
+        ],
+        "verification_mode": "simulation",
+        "spec": "WHEN the NULL DGP runs (zero recombinants injected, n=5000) THEN THE SYSTEM SHALL return z_i=0 for >= 99% of genomes (genome-level FPR <= 1%); this is the no-hallucination requirement. EARS: WHEN no recombination is present THEN THE SYSTEM SHALL NOT hallucinate mosaics."
+      },
+      {
+        "id": "AC-ORACLE",
+        "traces_to": [
+          "FB-SHORT-TRACT",
+          "FB-WEAK-CLUSTERING"
+        ],
+        "verification_mode": "simulation",
+        "spec": "WHEN the method is given the TRUE parent-cluster labels (oracle upper bound) THEN breakpoint-localization accuracy (mean |b_hat - b_true|) SHALL be reported AND SHALL serve as the ceiling for the unsupervised path. EARS: WHEN oracle parents are provided THEN THE SYSTEM SHALL report the localization ceiling."
+      },
+      {
+        "id": "AC-NAIVE-BASELINES",
+        "traces_to": [
+          "FB-HOMOPLASY",
+          "FB-SHORT-TRACT"
+        ],
+        "verification_mode": "benchmark",
+        "spec": "WHEN benchmarked against the no-recombination null baseline AND the single-global-breakpoint naive baseline (Category 5) on the true-recombination DGP THEN THE SYSTEM SHALL achieve mosaic-F1 at least 0.10 higher AND breakpoint-recall at least 0.15 higher than BOTH naive baselines; if it does not, the method has no utility over the simplest competitor (kill-switch)."
+      },
+      {
+        "id": "AC-SCALING",
+        "traces_to": [
+          "FB-GAPPY"
+        ],
+        "verification_mode": "benchmark",
+        "spec": "WHEN run on n=5000 genomes (HIV 9.8kb and SARS-CoV-2 29.9kb) on a single CPU core THEN THE SYSTEM SHALL complete in <= 8 hours wall-clock AND <= 8 GB peak memory AND SHALL report per-genome cost; this is the T2 scalability axis that the cited classics (3SEQ/RDP5/GARD) do not reach at n=5000."
+      },
+      {
+        "id": "AC-BENCHMARK-SOTA",
+        "traces_to": [
+          "FB-HOMOPLASY",
+          "FB-SHORT-TRACT"
+        ],
+        "verification_mode": "benchmark",
+        "spec": "WHEN benchmarked on identical MSAs with identical held-out recombinant events (fresh parent pairs, simulator-only truth — no circular ground truth) against 3SEQ (Lam 2018), RDP5 (Martin 2021), and GARD (HyPhy) THEN THE SYSTEM SHALL be reported on mosaic-F1, breakpoint-localization, parent-assignment accuracy, FPR-on-null, runtime, and memory; the comparison is the T2 'defensibly better on >=1 axis' claim. The naive baselines (AC-NAIVE-BASELINES) are included in the same table."
+      }
+    ],
+    "pseudocode_hashes": {
+      "load_msa": "sha256:alignio-read-uint8-encode",
+      "window_similarity_profile": "sha256:hamming-broadcast-per-window-row",
+      "discover_parent_clusters": "sha256:spectral-ncut-eigengap",
+      "per_genome_membership_path": "sha256:argmax-mean-sim-to-cluster",
+      "detect_change_points": "sha256:dp-segmented-bic-pelt",
+      "discordance_test": "sha256:local-nj-jc69-two-tree-lrt",
+      "null_calibration": "sha256:null-dgp-fpr-threshold-bh",
+      "report_genome": "sha256:assemble-z-b-confidence-flags"
+    }
+  },
+  "provenance_hash": "ef833ccdbfaa"
+}

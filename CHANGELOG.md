@@ -2,6 +2,29 @@
 
 All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-08-09 — the skill-effectiveness benchmark (minor: research-methodology milestone)
+
+### SOURCE-BOUND ATTESTED -> SCIENTIFICALLY SUPPORTED (begins). The question this must answer: do the
+7 skills make AI-designed bioinformatics algorithms more scientifically sound (fewer estimand /
+leakage / benchmark-fairness / false-novelty / unnecessary-complexity errors) than a vanilla agent,
+across domains — not just neater evidence chains?
+
+- `benchmarks/run_benchmark.py` — executable harness: `check` (confound guard — no prompt leaks its
+  traps.json answer-key), `objective <runs>` (bias-free: does a run emit a crossbio_validate-passing
+  artifact chain?), `summary <cases>` (objective status + rubric aggregation).
+- 8 domain cases seeded (6 non-scanpy: phylo-recombination, variant-calling, metagenomics-strain-tracking,
+  protein-interface-prediction, survival-clinical-ml, network-grn-inference; 2 home-field: scrna-imputation,
+  spatial-celltype-deconv). Each = `prompt.md` (agent-visible, no traps) + `traps.json` (agent-invisible key).
+- Fixes the 3 reviewer confounds: prompt/traps split (check-enforced), run metadata (`meta.json`:
+  model/mode/skill_files), independent no-skill sessions (no skills/CLAUDE.md/traps).
+- **Pilot (2 domains x {no-skill, Standard}):** OBJECTIVE (bias-free) — both Standard runs emit a
+  validator-passing artifact chain (VALID, 0 errors); both no-skill runs emit none (absent). Rubric
+  stream (same-model, mode-blinded) in `PILOT_REPORT.md`.
+
+### Not done (final milestone)
+- Blinded human-expert grading across all 8 domains x {no-skill, Standard, Publication} x N runs +
+  token/time cost. That is the publishable method paper.
+
 ## [0.2.5] — 2026-08-09
 
 ### SOURCE-BOUND ATTESTED — closes the v0.2.4 bypass holes (reviewer round 6, reverse-attack):

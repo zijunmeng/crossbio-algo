@@ -1,0 +1,12 @@
+{
+  "case": "phylo-recombination",
+  "mode": "no-skill",
+  "run_id": 1,
+  "model": "glm-5.2",
+  "model_version_note": "subagent inherits the session model; non-deterministic across runs",
+  "generated_at_note": "single run; multi-run not yet executed (v0.3 milestone)",
+  "skill_files_loaded": [],
+  "input": "prompt.md only (no traps, no skills, no CLAUDE.md)",
+  "condition": "control — vanilla researcher, no methodology framework",
+  "bias_note": "same model as the Standard run + the grader (author/grader-of-both); mitigated by independent session + no trap visibility, NOT eliminated"
+}

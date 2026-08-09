@@ -1,0 +1,8 @@
+{
+  "grader_note": "same-model (glm-5.2), MODE-BLINDED (grader saw only an anonymized /tmp/gN.md; knew the domain, not the mode). NOT human-expert evidence.",
+  "scores": {"problem_definition": 3, "estimand_correctness": 3, "data_leakage": 1, "statistical_assumptions": 3, "benchmark_fairness": 3, "novelty_honesty": 3, "implementability": 3, "failure_boundary_quality": 3, "reproducibility": 1, "overall_usefulness": 3},
+  "traps_caught": ["T1", "T3", "T4", "T5", "T6"],
+  "traps_missed": ["T2"],
+  "biggest_strength": "Estimand + statistical machinery are exact (changepoint LRT, parametric-bootstrap, profile-likelihood CIs) validated on coalescent-simulated truth.",
+  "biggest_gap": "No leakage analysis at the clade/parent-pair split unit (T2) and no reproducibility provisions (seeds/pinned deps/data versions)."
+}

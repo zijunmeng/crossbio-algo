@@ -1,0 +1,25 @@
+{
+  "domain": "spatial transcriptomics (deconvolution) — home-field baseline",
+  "non_scanpy": false,
+  "expected_stages": ["data-audit", "design", "spec"],
+  "traps": [
+    {"id": "T1", "rubric_dim": "estimand_correctness",
+     "description": "the estimand is the cell-type proportion VECTOR per spot (a simplex), not 'cell types present'",
+     "caught_looks_like": "states the per-spot proportion-vector estimand (simplex-constrained)"},
+    {"id": "T2", "rubric_dim": "data_leakage",
+     "description": "the sc reference and the spatial spots must not share a donor at train/test; reference donors split out",
+     "caught_looks_like": "draws a leakage graph; donor-level split between reference and held-out spots"},
+    {"id": "T3", "rubric_dim": "failure_boundary_quality",
+     "description": "spot cell types not present in the reference (unseen types) -> the proportions are not identifiable; degradation",
+     "caught_looks_like": "names reference-mismatch / unseen-cell-type as a failure boundary"},
+    {"id": "T4", "rubric_dim": "estimand_correctness",
+     "description": "collinear/similar cell types make the proportion vector non-identifiable (ill-conditioned inverse)",
+     "caught_looks_like": "includes an identifiability / collinearity analysis"},
+    {"id": "T5", "rubric_dim": "benchmark_fairness",
+     "description": "must compare to cell2location/RCTD AND a naive NNLS/least-squares baseline, on a semi-synthetic mix with known proportions",
+     "caught_looks_like": "names a SOTA deconvolver + naive NNLS + a known-proportion semi-synthetic"},
+    {"id": "T6", "rubric_dim": "statistical_assumptions",
+     "description": "spot depth + library-size differences confound proportions; must normalize, not assume equal efficiency",
+     "caught_looks_like": "models spot depth / library size; flags the depth confound"}
+  ]
+}

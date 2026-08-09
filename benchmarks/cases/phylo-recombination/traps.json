@@ -1,0 +1,25 @@
+{
+  "domain": "phylogenetics / virology (non-scanpy)",
+  "non_scanpy": true,
+  "expected_stages": ["data-audit", "design", "spec"],
+  "traps": [
+    {"id": "T1", "rubric_dim": "estimand_correctness",
+     "description": "'detect recombination' is vague — the estimand is the breakpoint coordinates + parent-assignment per genome (argmax over mosaics), not a yes/no",
+     "caught_looks_like": "states the estimand as breakpoint locations + parent assignment"},
+    {"id": "T2", "rubric_dim": "data_leakage",
+     "description": "train/test split that shares a clade or the same parent pair leaks phylogenetic signal; split unit = clade/parent-pair, not a single genome",
+     "caught_looks_like": "draws a leakage graph; splits at clade/parent-pair level"},
+    {"id": "T3", "rubric_dim": "benchmark_fairness",
+     "description": "recombination 'truth' from the SAME detection method (or a correlated one) is circular ground truth",
+     "caught_looks_like": "uses a coalescent simulation with injected breakpoints as truth, or flags circularity"},
+    {"id": "T4", "rubric_dim": "statistical_assumptions",
+     "description": "shared ancestry can mimic a mosaic; high divergence saturates substitutions -> homoplasy. These confounds must be modeled, not assumed away",
+     "caught_looks_like": "names shared-ancestry/saturation as a confound + how the model handles it"},
+    {"id": "T5", "rubric_dim": "benchmark_fairness",
+     "description": "must compare to RDP4/GARD/3SEQ AND a naive single-breakpoint + a null (no-recombination) baseline, with known truth",
+     "caught_looks_like": "names the SOTA tools + a naive + a null baseline"},
+    {"id": "T6", "rubric_dim": "failure_boundary_quality",
+     "description": "low-signal short tracts, gappy alignment, and divergent-saturation regimes break detection — failure boundaries",
+     "caught_looks_like": "names >=1 failure boundary with a condition + mechanism"}
+  ]
+}

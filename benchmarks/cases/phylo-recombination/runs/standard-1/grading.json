@@ -1,0 +1,8 @@
+{
+  "grader_note": "same-model (glm-5.2), MODE-BLINDED (anonymized /tmp/gN.md; domain known, mode not). NOT human-expert evidence.",
+  "scores": {"problem_definition": 3, "estimand_correctness": 3, "data_leakage": 3, "statistical_assumptions": 3, "benchmark_fairness": 3, "novelty_honesty": 3, "implementability": 3, "failure_boundary_quality": 3, "reproducibility": 3, "overall_usefulness": 3},
+  "traps_caught": ["T1", "T2", "T3", "T4", "T5", "T6"],
+  "traps_missed": [],
+  "biggest_strength": "Every trap caught at the right rubric dimension — estimand = breakpoint+parent (not yes/no), leakage graph splits at parent-pair/clade, simulator-only truth refuses circularity, 5-class competitor map pins the novelty locus.",
+  "biggest_gap": "Inference left as least-squares segmented-Gaussian on a derived similarity trace with several statistical items deferred (chi-square asymptotics, exact BIC effective-N, parametric-bootstrap) + ~10 deferred code-stage implementation defects — method correctness asserted, not yet demonstrated at the spec stage."
+}

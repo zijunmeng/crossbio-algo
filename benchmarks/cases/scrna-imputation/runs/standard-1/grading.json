@@ -1,0 +1,8 @@
+{
+  "grader_note": "same-model (glm-5.2), MODE-BLINDED (anonymized /tmp/gN.md; domain known, mode not). NOT human-expert evidence.",
+  "scores": {"problem_definition": 3, "estimand_correctness": 3, "data_leakage": 3, "statistical_assumptions": 3, "benchmark_fairness": 3, "novelty_honesty": 3, "implementability": 3, "failure_boundary_quality": 3, "reproducibility": 2, "overall_usefulness": 3},
+  "traps_caught": ["T1", "T2", "T3", "T4", "T5", "T6"],
+  "traps_missed": [],
+  "biggest_strength": "Two-level identifiability honesty (MAR=prior-dominated, MNAR=not-identifiable) carried byte-identically through the chain, turning the beta_dropout diagnostic itself into the novelty locus rather than hiding the assumption.",
+  "biggest_gap": "Reproducibility stops at seeds — no pinned dependency versions / environment lock / explicit dataset-version hashing, so a third party could not bit-for-bit reproduce the headline benchmark."
+}

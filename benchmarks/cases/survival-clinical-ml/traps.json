@@ -1,0 +1,25 @@
+{
+  "domain": "clinical ML / survival analysis",
+  "non_scanpy": true,
+  "expected_stages": ["data-audit", "design", "spec"],
+  "traps": [
+    {"id": "T1", "rubric_dim": "estimand_correctness",
+     "description": "the estimand is a risk score / survival curve with a proper scoring rule (C-index, integrated Brier), not 'predict survival'",
+     "caught_looks_like": "states a risk score + a survival-proper metric (C-index / Brier)"},
+    {"id": "T2", "rubric_dim": "data_leakage",
+     "description": "leakage is the #1 trap: preprocessing/feature-selection fit on all data, train/test share patients, or imputation uses test stats",
+     "caught_looks_like": "fits ALL preprocessing inside the train fold only; patient-level split; explicit leakage check"},
+    {"id": "T3", "rubric_dim": "statistical_assumptions",
+     "description": "right-censoring must be modeled (Cox/accelerated-failure); naive regression on observed times is biased",
+     "caught_looks_like": "uses a survival model (Cox/RSF/AFT); flags naive-regression as biased"},
+    {"id": "T4", "rubric_dim": "failure_boundary_quality",
+     "description": "p>>n (genes >> patients) overfits; needs regularization + nested CV; high variance",
+     "caught_looks_like": "names p>>n overfitting + nested CV + regularization"},
+    {"id": "T5", "rubric_dim": "benchmark_fairness",
+     "description": "must compare to Cox-PH + elastic-net AND a clinical-only baseline, with nested CV + a held-out test",
+     "caught_looks_like": "names Cox/elastic-net + clinical-only baseline + nested CV"},
+    {"id": "T6", "rubric_dim": "novelty_honesty",
+     "description": "discrimination (C-index) alone is insufficient; calibration must be reported; a model can rank without being calibrated",
+     "caught_looks_like": "reports calibration (Brier/calibration curve) alongside discrimination"}
+  ]
+}
