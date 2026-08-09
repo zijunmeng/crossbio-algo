@@ -1,15 +1,15 @@
 {
   "generated_via": "crossbio attest",
-  "generated_at": "2026-08-09T13:45:57",
-  "git_commit": "eb9cc47326d81489212e3d23314dbefd62b4b13d",
-  "env_fingerprint": "dcaa3326948a",
+  "generated_at": "2026-08-09T14:40:36",
+  "git_commit": "8eba0c68fe344518ca55c18dd532ca17808c3ecf",
+  "env_fingerprint": "8ed37ab24e24",
   "env": {
-    "pytest": "6.2.2",
-    "numpy": "1.26.4",
-    "scipy": "1.11.4",
-    "scikit-learn": "1.2.2",
-    "jsonschema": "4.25.1",
-    "pyyaml": "5.4.1"
+    "pytest": "9.1.1",
+    "numpy": "2.5.1",
+    "scipy": "1.18.0",
+    "scikit-learn": "1.9.0",
+    "jsonschema": "4.26.0",
+    "pyyaml": "6.0.3"
   },
   "source_snapshot": {
     "../test_scout.py": "d1ff88af7d5b9159fdd06d4c9382a8d3a49e6a4cee87753aede1e2fcea4dc589",

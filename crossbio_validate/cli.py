@@ -107,8 +107,9 @@ def _run_attest(target, out, root=".", bind=()):
     # Paths are stored RELATIVE TO THE results.json OUTPUT DIR so the validator (whose root is that
     # dir) resolves them correctly.
     out_dir = os.path.dirname(os.path.abspath(out))
+    test_file = target.split("::", 1)[0]  # nodeid "path::test" -> hash the test FILE (reviewer v0.2.5 §3)
     source_snapshot = {}
-    for f in [target, *bind]:
+    for f in [test_file, *bind]:
         p = f if os.path.isabs(f) else os.path.join(root, f)
         if os.path.isfile(p):
             source_snapshot[os.path.relpath(p, out_dir)] = _file_sha256(p)

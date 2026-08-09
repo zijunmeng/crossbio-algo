@@ -1,6 +1,25 @@
-# crossbio-algo — 项目总结 (v0.2.4)
+# crossbio-algo — 项目总结 (v0.2.5)
 
-## v0.2.4（当前）—— OBSERVED → **SOURCE-BOUND ATTESTED** + complexity kill-switch
+## v0.2.5（当前）—— SOURCE-BOUND ATTESTED 封洞(逆向攻击后)
+
+六轮评审（**8.4/10**）反过来攻 SOURCE-BOUND 机制,找到 5 个可绕过的洞。v0.2.5 全封:
+
+| 洞 | 修法 | RED 测试 |
+|---|---|---|
+| **1 results 无 source_snapshot 仍当 ATTESTED** | 无 snapshot → UNBOUND ERROR;rule_test_link 只对 bound results 走 ATTESTED 路径 | `test_attack_unbound_results_no_snapshot` |
+| **2 --bind 可选 → impl 未被 attestation 覆盖** | 每个 `implementation.source_file` 必须在 snapshot 里,否则 ERROR | `test_attack_impl_not_covered_by_snapshot` |
+| **3 nodeid target 不 hash test 文件** | `target.split("::")[0]` 取 test 文件 hash | (CLI,手动验) |
+| **4 aggregation=all 缺一个 test 仍 pass** | all 要求**每个** linked test 都有 observed outcome(无失败证据 ≠ 全成功) | `test_attack_all_aggregation_missing_test` |
+| **5 test_aggregation 拼错静默变 any** | schema enum [all,any];未知值 ERROR(不静默弱化) | `test_attack_unknown_test_aggregation` |
+| **6 attested env 不判 supported** | results.env vs pyproject 声明最低版本 → UNSUPPORTED_ENVIRONMENT WARNING | (SCOUT 重 attestation 在满足契约的 crossbio env) |
+
+**全套 52 测试通过**(validator 34 + viability 5 + meta 2 + scout 11)。SCOUT 链 attested + source-bound + impl-covered + env-supported → 0 error / 1 warning(OT kill-switch)。
+
+下一步(v0.3,**SCIENTIFICALLY SUPPORTED**):8 域 skill effectiveness benchmark 完整盲评 + 结构化 estimand/symbol contract。不加新 skill。SCOUT 保持负结果 fixture(OT 被 kill-switch 标 remove_or_redesign)。
+
+---
+
+## v0.2.4 —— OBSERVED → **SOURCE-BOUND ATTESTED** + complexity kill-switch
 
 五轮评审（**8.3/10**）抓到一个漂亮的 provenance 漏洞:`results.json` 的 `git_commit` 是 parent(attest 在 commit 前跑),且 validator 从不绑定 source snapshot —— 可"改代码+复用旧 results.json"。**v0.2.4:把 OBSERVED RESULT 绑到 CURRENT SOURCE。**
 

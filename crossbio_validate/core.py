@@ -474,30 +474,42 @@ def rule_test_link(arts: list[dict], results: Optional[dict] = None) -> list[Fin
                 f"acceptance_criterion {ac_id!r} ({ac.get('verification_mode')}) has no test linked",
                 spec.get("artifact_id")))
             continue
-        # collect ALL attested outcomes for linked tests (no break) — multi-test aggregation (reviewer v0.2.4 §1)
-        attested = [rtests[t["pytest_nodeid"]].get("outcome")
-                    for t in linked if t.get("pytest_nodeid") in rtests]
-        agg = ac.get("test_aggregation", "all")  # all (default) | any
-        if results is not None:
-            # ATTESTED: observed outcomes are authoritative (code.json cannot self-declare passed)
-            if not attested:
+        agg = ac.get("test_aggregation", "all")
+        if agg not in ("all", "any"):
+            out.append(Finding("test-link", "ERROR",
+                f"acceptance_criterion {ac_id!r}: test_aggregation={agg!r} must be 'all' or 'any'"
+                f" (a typo must not silently weaken to 'any')",
+                spec.get("artifact_id")))
+            continue
+        linked_nodeids = [t.get("pytest_nodeid") for t in linked if t.get("pytest_nodeid")]
+        observed = {n: rtests[n].get("outcome") for n in linked_nodeids if n in rtests}
+        missing = [n for n in linked_nodeids if n not in rtests]
+        # ATTESTED only if results exist AND are source-bound (have a source_snapshot) — v0.2.5 hole 1
+        bound = results is not None and bool((results or {}).get("source_snapshot"))
+        if bound:
+            if agg == "all" and missing:
                 out.append(Finding("test-link", "ERROR",
-                    f"acceptance_criterion {ac_id!r}: no linked test has an observed result in results.json"
-                    f" (run `crossbio attest`)",
+                    f"acceptance_criterion {ac_id!r} (aggregation=all): {missing} have no observed result"
+                    f" — 'all' requires EVERY linked test attested (no-failure-evidence != all-success)",
+                    spec.get("artifact_id")))
+            elif not observed:
+                out.append(Finding("test-link", "ERROR",
+                    f"acceptance_criterion {ac_id!r}: no linked test has an observed result (run `crossbio attest`)",
                     spec.get("artifact_id")))
             else:
-                ok = all(o == "passed" for o in attested) if agg == "all" else any(o == "passed" for o in attested)
+                ok = all(o == "passed" for o in observed.values()) if agg == "all" \
+                    else any(o == "passed" for o in observed.values())
                 if not ok:
                     out.append(Finding("test-link", "ERROR",
-                        f"acceptance_criterion {ac_id!r} (aggregation={agg}): observed outcomes={attested}"
-                        f" do not satisfy {agg}-passed",
+                        f"acceptance_criterion {ac_id!r} (aggregation={agg}): observed={observed}"
+                        f" does not satisfy {agg}-passed",
                         spec.get("artifact_id")))
         else:
-            # UNATTESTED: self-declared 'passed' is only a WARNING, never trusted
+            # UNATTESTED (no results.json OR not source-bound): self-declared 'passed' is only a WARNING
             if any(t.get("status") == "passed" for t in linked):
                 out.append(Finding("test-link", "WARNING",
                     f"acceptance_criterion {ac_id!r}: declared passed but UNATTESTED"
-                    f" (no results.json — run `crossbio attest`)",
+                    f" (no source-bound results.json — run `crossbio attest --bind <impl files>`)",
                     spec.get("artifact_id")))
             else:
                 out.append(Finding("test-link", "ERROR",
@@ -509,27 +521,87 @@ def rule_test_link(arts: list[dict], results: Optional[dict] = None) -> list[Fin
 # (legacy rule_test_link removed — superseded by the ATTESTED version above (v0.2.3))
 
 
+def _find_upward(start: str, name: str, max_up: int = 6) -> Optional[str]:
+    d = os.path.abspath(start)
+    for _ in range(max_up):
+        p = os.path.join(d, name)
+        if os.path.isfile(p):
+            return p
+        d = os.path.dirname(d)
+    return None
+
+
+def _version_ge(a: str, b: str) -> bool:
+    def t(s):
+        nums = re.findall(r"\d+", str(s))
+        return tuple(int(x) for x in nums[:3]) if nums else (0,)
+    return t(a) >= t(b)
+
+
+def _env_contract_findings(results: dict, root: str, aid) -> list[Finding]:
+    """Compare the attested env (results.env) against pyproject declared minimums (pkg>=X).
+    An unsupported env is a WARNING — the observed result still stands, but the env doesn't meet
+    the project's own dependency contract (reviewer v0.2.5 §5)."""
+    env = results.get("env") or {}
+    if not env:
+        return []
+    pp = _find_upward(root, "pyproject.toml")
+    if not pp:
+        return []
+    text = open(pp).read()
+    declared = dict(re.findall(r'"([A-Za-z0-9_\-]+)\s*>=\s*([0-9][0-9.]*)"', text))
+    out: list[Finding] = []
+    for pkg, minv in declared.items():
+        key = pkg.lower()
+        att = env.get(pkg) or env.get(pkg.lower()) or env.get(pkg.replace("-", "_"))
+        if att in (None, "missing"):
+            continue
+        if not _version_ge(att, minv):
+            out.append(Finding("source-attestation", "WARNING",
+                f"UNSUPPORTED_ENVIRONMENT: attested {pkg}={att} is below the declared >={minv}",
+                aid))
+    return out
+
+
 def rule_source_attestation(arts: list[dict], results: Optional[dict], root: str = ".") -> list[Finding]:
-    """SOURCE-BOUND ATTESTATION (reviewer v0.2.4): the observed results must be FOR THE CURRENT
-    SOURCE. results.source_snapshot hashes the impl + test files at attest time; if any changed
-    since, the attestation is STALE -> ERROR. This closes the 'reuse an old results.json after
-    editing the code' hole (git_commit alone can't bind, since attest runs pre-commit)."""
-    if not results or not results.get("source_snapshot"):
+    """SOURCE-BOUND ATTESTATION. v0.2.5 closes the v0.2.4 holes:
+    (1) results.json present but NO source_snapshot -> UNBOUND ERROR (cannot be SOURCE-BOUND ATTESTED);
+    (2) every code.implementations[].source_file MUST be covered by the snapshot (no attest-without-bind
+        that leaves impl code un-attested);
+    (3) snapshot files must match the current source (STALE on drift);
+    (6) the attested env must satisfy pyproject dependency minimums (UNSUPPORTED_ENVIRONMENT)."""
+    if not results:
         return []
     code = next((a for a in arts if a.get("stage") == "code"), None)
     aid = code.get("artifact_id") if code else None
     out: list[Finding] = []
-    for f, expected in results["source_snapshot"].items():
+    snap = results.get("source_snapshot")
+    if not snap:
+        out.append(Finding("source-attestation", "ERROR",
+            "UNBOUND ATTESTATION: results.json has no source_snapshot — cannot be SOURCE-BOUND ATTESTED"
+            " (run `crossbio attest --bind <impl files>`)", aid))
+        return out
+    # (3) each snap file must match the current source
+    for f, expected in snap.items():
         p = f if os.path.isabs(f) else os.path.join(root, f)
         if not os.path.isfile(p):
             out.append(Finding("source-attestation", "ERROR",
                 f"attestation-bound file {f!r} no longer exists — re-attest", aid))
             continue
-        cur = hashlib.sha256(open(p, "rb").read()).hexdigest()
-        if cur != expected:
+        if hashlib.sha256(open(p, "rb").read()).hexdigest() != expected:
             out.append(Finding("source-attestation", "ERROR",
                 f"STALE ATTESTATION: {f!r} changed since results.json was generated"
                 f" (re-run `crossbio attest` against the current source)", aid))
+    # (2) every implementation source_file MUST be covered by the snapshot
+    snap_keys = set(snap.keys())
+    for impl in (code.get("stage_fields") or {}).get("implementations") or []:
+        sf = impl.get("source_file")
+        if sf and sf not in snap_keys:
+            out.append(Finding("source-attestation", "ERROR",
+                f"implementation {impl.get('module')!r} source_file {sf!r} is NOT in the attestation"
+                f" snapshot — bind it (`crossbio attest --bind {sf}`) or it can drift unattested", aid))
+    # (6) env contract
+    out += _env_contract_findings(results, root, aid)
     return out
 
 

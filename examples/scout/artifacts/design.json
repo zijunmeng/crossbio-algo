@@ -2,7 +2,7 @@
   "artifact_id": "scout-design",
   "stage": "design",
   "parent_artifact_id": "scout-data-audit",
-  "skill_version": "0.2.4",
+  "skill_version": "0.2.5",
   "stage_fields": {
     "problem_definition": "From paired scMultiome (RNA+ATAC, no spatial) + spatial RNA (no ATAC), infer spatial ATAC via a shared paired latent; CPU-only.",
     "estimand": "the unobserved spatial ATAC accessibility at each spot, recovered through the paired RNA-ATAC shared latent (CPU-only, no spatial ATAC data)",
@@ -46,5 +46,5 @@
     ],
     "complexity": "pair_map: SVD O(min(g,n)^2 * max) + lstsq O(n k^2); project: Sinkhorn O(n_iter * m_in * n), mini-batch over m for scale; CPU-feasible to ~100k spots with mini-batch (POT in production)"
   },
-  "provenance_hash": "2a587d6b6931"
+  "provenance_hash": "d63b59ce0914"
 }

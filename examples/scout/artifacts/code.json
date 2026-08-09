@@ -2,7 +2,7 @@
   "artifact_id": "scout-code",
   "stage": "code",
   "parent_artifact_id": "scout-spec",
-  "skill_version": "0.2.4",
+  "skill_version": "0.2.5",
   "stage_fields": {
     "module_hashes": {
       "pair_map": "6d1a12a323b8",
@@ -86,5 +86,5 @@
       }
     ]
   },
-  "provenance_hash": "244f9ac4ba29"
+  "provenance_hash": "0de7c5c680b3"
 }

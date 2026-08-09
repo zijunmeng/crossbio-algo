@@ -364,22 +364,72 @@ def _ac_spec(mode="automated_test"):
     return s
 
 
+def _bound_results(tmp_path, nodeid, outcome):
+    """A SOURCE-BOUND results.json: source_snapshot covers the impl src + the observed outcome."""
+    import hashlib
+    src = tmp_path / "src.py"
+    return {"source_snapshot": {str(src): hashlib.sha256(src.read_bytes()).hexdigest()},
+            "tests": {nodeid: {"outcome": outcome}}}
+
+
 def test_attested_results_override_self_declaration(tmp_path):
-    """ATTESTED: results.json observing 'passed' => TESTED, even if artifact omits status.
-    code.json has no authority to self-attest (reviewer §2 v0.2.3)."""
+    """SOURCE-BOUND ATTESTED: bound results observing 'passed' => TESTED. code.json has no authority."""
+    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")  # creates src.py
     (tmp_path / "results.json").write_text(json.dumps(
-        {"tests": {"test_x.py::test_t1": {"outcome": "passed"}}}))
-    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")
+        _bound_results(tmp_path, "test_x.py::test_t1", "passed")))
     assert errs(core.validate_chain([da(), design(), _ac_spec(), c], root=str(tmp_path))) == []
 
 
 def test_attested_observed_failure_beats_self_declared_passed(tmp_path):
-    """ATTESTED: results.json observing 'failed' => ERROR, even though the artifact says status=passed.
-    This is the core fix — DECLARED passed != TESTED passed."""
+    """SOURCE-BOUND ATTESTED: observed FAILED => ERROR even if the artifact says status=passed."""
+    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")  # creates src.py; self-declares passed (a lie)
     (tmp_path / "results.json").write_text(json.dumps(
-        {"tests": {"test_x.py::test_t1": {"outcome": "failed"}}}))
-    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")  # self-declares passed (a lie)
+        _bound_results(tmp_path, "test_x.py::test_t1", "failed")))
     assert "test-link" in rules(errs(core.validate_chain([da(), design(), _ac_spec(), c], root=str(tmp_path))))
+
+
+def test_attack_unbound_results_no_snapshot(tmp_path):
+    """Hole 1: results.json present but NO source_snapshot -> UNBOUND ERROR (not ATTESTED)."""
+    (tmp_path / "results.json").write_text(json.dumps({"tests": {"test_x.py::test_t1": {"outcome": "passed"}}}))
+    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")
+    assert "source-attestation" in rules(errs(core.validate_chain([da(), design(), _ac_spec(), c], root=str(tmp_path))))
+
+
+def test_attack_impl_not_covered_by_snapshot(tmp_path):
+    """Hole 2: an implementation source_file not in the snapshot -> ERROR (impl can drift unattested)."""
+    import hashlib
+    testf = tmp_path / "test_x.py"
+    testf.write_text("def t():\n    pass\n")
+    (tmp_path / "results.json").write_text(json.dumps({
+        "source_snapshot": {str(testf): hashlib.sha256(testf.read_bytes()).hexdigest()},
+        "tests": {"test_x.py::test_t1": {"outcome": "passed"}}}))
+    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")  # impl source_file NOT in snapshot
+    assert "source-attestation" in rules(errs(core.validate_chain([da(), design(), _ac_spec(), c], root=str(tmp_path))))
+
+
+def test_attack_all_aggregation_missing_test(tmp_path):
+    """Hole 4: aggregation=all but one linked test has no observed result -> ERROR
+    (no-failure-evidence must not be read as all-success)."""
+    s = _ac_spec()
+    s["stage_fields"]["acceptance_criteria"][0]["test_aggregation"] = "all"
+    core.stamp(s)
+    c = _code_with_impl(tmp_path, "test_x.py::test_a", status="passed")
+    c["stage_fields"]["tests"].append({"test_id": "t2", "verifies_ac": "ac1", "status": "passed",
+                                       "pytest_nodeid": "test_x.py::test_b"})  # second required test
+    core.stamp(c)
+    (tmp_path / "results.json").write_text(json.dumps(
+        _bound_results(tmp_path, "test_x.py::test_a", "passed")))  # observes test_a only, NOT test_b
+    assert "test-link" in rules(errs(core.validate_chain([da(), design(), s, c], root=str(tmp_path))))
+
+
+def test_attack_unknown_test_aggregation(tmp_path):
+    """Hole 5: test_aggregation typo ('ALL') -> ERROR, not silent weakening to 'any'."""
+    s = _ac_spec()
+    s["stage_fields"]["acceptance_criteria"][0]["test_aggregation"] = "ALL"
+    core.stamp(s)
+    c = _code_with_impl(tmp_path, "test_x.py::test_t1", status="passed")
+    (tmp_path / "results.json").write_text(json.dumps(_bound_results(tmp_path, "test_x.py::test_t1", "passed")))
+    assert "test-link" in rules(errs(core.validate_chain([da(), design(), s, c], root=str(tmp_path))))
 
 
 def test_unattested_declared_passed_is_only_a_warning():

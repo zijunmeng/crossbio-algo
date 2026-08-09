@@ -2,7 +2,7 @@
   "artifact_id": "scout-data-audit",
   "stage": "data-audit",
   "parent_artifact_id": null,
-  "skill_version": "0.2.4",
+  "skill_version": "0.2.5",
   "stage_fields": {
     "biological_unit": "donor (one fetal donor = one biological replicate); spots/cells are observational units, not independent replicates",
     "estimand": "the unobserved spatial ATAC accessibility at each spot, recovered through the paired RNA-ATAC shared latent (CPU-only, no spatial ATAC data)",
@@ -11,5 +11,5 @@
     "leakage_graph": "synthetic DGP: paired (fit) and spatial (project) drawn from the same generative latent Z by construction; ground-truth ATAC_true is held out for EVALUATION ONLY, never used in fitting",
     "split_strategy": "N/A semi-synthetic (ATAC_true used solely as evaluation oracle); real-data split = donor-level"
   },
-  "provenance_hash": "6774637ad8aa"
+  "provenance_hash": "0325267eaf2f"
 }

@@ -77,11 +77,11 @@ crossbio validate-project <dir>   # scan a project dir, then validate-chain
 crossbio stamp <one.json>         # authoring helper: write the correct provenance_hash
 ```
 
-**What it catches** — design↔spec↔code drift: an estimand that changed silently between stages, a `failure_boundary` with no acceptance test tracing back to it, notation shapes that diverged (e.g. `X∈ℝ^{n×p}` in design vs `n×d` in spec), pseudocode that has no code counterpart, or a broken `parent_artifact_id` / `provenance_hash`. Plus the **executable-trace** rules (Phase 1): every acceptance criterion that declares `verification_mode ∈ {automated_test, simulation, benchmark, analytic_argument, documented_limitation, external_validation}` MUST link to ≥1 passing test (FB→AC→TEST→RESULT) — a declared-but-untested acceptance criterion is an ERROR, and a `documented_limitation` MUST NOT be marked `passed`; source hashes are recomputed from disk (not trusted from the declared string). The kind of bug that previously slipped through to expert review.
+**What it catches** — design↔spec↔code drift: an estimand that changed silently between stages, a `failure_boundary` with no acceptance test tracing back to it, notation shapes that diverged (e.g. `X∈ℝ^{n×p}` in design vs `n×d` in spec), pseudocode that has no code counterpart, or a broken `parent_artifact_id` / `provenance_hash`. Plus the **executable-trace** rules (Phase 1): every acceptance criterion in a **test-requiring** mode (`automated_test` / `simulation` / `benchmark`) MUST link to ≥1 **source-bound** passing test (FB→AC→TEST→RESULT — `crossbio attest` binds the result to the current source; a self-declared `passed` is only an unattested WARNING); a `documented_limitation` MUST NOT be marked `passed`; and a component shown ≤ a simpler alternative is flagged `remove_or_redesign` (complexity kill-switch). The kind of bug that previously slipped through to expert review.
 
 **Run everything:**
 ```bash
-python -m pytest tests/           # 26 validator tests (tests/test_validator.py)
+python -m pytest tests/           # 30 validator tests (tests/test_validator.py)
                                   # + 11 scout tests (examples/scout/test_scout.py)
 ```
 CI (`.github/workflows/validate.yml`) runs the validator suite plus a skill-frontmatter + plugin-manifest + schema-parse sanity check on every push/PR.
@@ -103,7 +103,7 @@ crossbio-algo/
 │   └── _shared/{research-design-handoff.md, artifact-validation.md}
 ├── crossbio_validate/schemas/stage-schemas.json          CANONICAL machine schema ($defs + oneOf per stage)
 ├── crossbio_validate/                  validator CLI package (cli.py, core.py)
-├── tests/test_validator.py             26 validator tests (incl. deliberately-drifted RED cases)
+├── tests/test_validator.py             30 validator tests (incl. deliberately-drifted RED cases)
 ├── examples/scout/                     flagship: design/requirements/tasks.md + scout.py + test_scout.py (11 tests)
 └── .github/workflows/validate.yml      CI: validator suite + frontmatter/manifest/schema sanity
 ```

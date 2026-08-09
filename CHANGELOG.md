@@ -2,6 +2,20 @@
 
 All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.2.5] — 2026-08-09
+
+### SOURCE-BOUND ATTESTED — closes the v0.2.4 bypass holes (reviewer round 6, reverse-attack):
+- (1) results.json present but no `source_snapshot` -> UNBOUND ERROR (can no longer pass as ATTESTED).
+- (2) every `code.implementations[].source_file` MUST be covered by the snapshot (no attest-without-bind
+  that leaves impl code un-attested).
+- (3) `crossbio attest` now hashes the test FILE even when the target is a pytest nodeid (`path::test`).
+- (4) aggregation=all requires EVERY linked test to have an observed outcome (no-failure-evidence != all-success).
+- (5) `test_aggregation` is now a schema enum [all, any]; an unknown value is an ERROR (a typo can no longer
+  silently weaken all->any).
+- (6) attested env is checked against pyproject declared minimums -> UNSUPPORTED_ENVIRONMENT WARNING
+  (the committed SCOUT results.json is now re-attested in an env meeting the contract).
+- README drift fixed: test-requiring modes are the 3 (not all 6); validator test count 26 -> 30.
+
 ## [0.2.4] — 2026-08-09
 
 ### OBSERVED -> SOURCE-BOUND ATTESTED (reviewer round 5): the attestation is now bound to the CURRENT SOURCE.
