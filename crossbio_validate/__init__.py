@@ -1,4 +1,4 @@
-"""crossbio-algo artifact validator (v0.2.1, P0-2).
+"""crossbio-algo artifact validator (v0.3.0).
 
 Real implementation of the machine-checkable handoff: every stage's artifact.json
 is validated against crossbio_validate/schemas/stage-schemas.json, and a chain of artifacts is

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "crossbio-algo",
+  "owner": {
+    "name": "zijunmeng",
+    "url": "https://github.com/zijunmeng"
+  },
+  "plugins": [
+    {
+      "name": "crossbio-algo",
+      "source": ".",
+      "description": "Cross-domain bioinformatics algorithm generation loop: data-audit → viability → adversarial audit → algorithm-design → executable spec. Installs scientific-honesty discipline a generic agent won't proactively do."
+    }
+  ]
+}

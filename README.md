@@ -40,19 +40,35 @@ The full loop is for a complete publication. For lighter tasks it is overkill, s
 **Never skipped** (all modes): `data-and-estimand-audit` always runs (the estimand/leakage audit is the root of the artifact chain); the artifact chain stays intact with estimand continuity + provenance hashes; the honest-colleague principle holds.
 
 ## Install
+
+### A. Claude Code plugin (recommended)
+```
+/plugin marketplace add zijunmeng/crossbio-algo
+/plugin install crossbio-algo@crossbio-algo
+```
+Then copy the bootstrap template into your project:
+```bash
+cp CLAUDE.md /path/to/your/project/CLAUDE.md   # fill in your research context
+```
+
+### B. Manual (no plugin manager)
 ```bash
 git clone https://github.com/zijunmeng/crossbio-algo
-# user-level (all projects):
-cp -r crossbio-algo/skills/* ~/.claude/skills/
-# recommended: copy the bootstrap template into your project
-cp crossbio-algo/CLAUDE.md ./CLAUDE.md   # then fill in your research context
+cp -r crossbio-algo/skills/* ~/.claude/skills/        # user-level skills
+cp crossbio-algo/CLAUDE.md /path/to/your/project/CLAUDE.md
 ```
-Or install as a Claude Code plugin via the marketplace (plugin.json provided).
 
-For the **machine-checkable handoff** (validator), install the package + test deps — this creates the `crossbio` console script (dep: `jsonschema`):
+### C. Validator only (`crossbio` CLI, no skills)
 ```bash
-pip install -e ".[test]"
+pip install git+https://github.com/zijunmeng/crossbio-algo
+crossbio validate-chain <artifact-dir>
+crossbio attest <tests> --bind <src> --out results.json
 ```
+
+### After install
+1. Fill in your project's `CLAUDE.md` (domain / compute / target tier / data).
+2. Propose a research direction → skills auto-trigger (data-audit → viability → design → spec).
+3. Validate each stage's `artifact.json` with `crossbio validate-chain`.
 
 ## Skills
 | skill | role |

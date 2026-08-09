@@ -6,7 +6,7 @@
 ## When the user proposes research / an algorithm / a tool / a method
 Follow the **crossbio-algo** loop. Read the **crossbio-algo:using-crossbio-algo** skill for the full loop + trigger priority. In short:
 
-1. **brainstorm** — if multiple ideas are wanted (dev-mode invents algorithms from mathematical essence + cross-domain, doesn't recombine)
+1. **brainstorm** — if multiple ideas are wanted (dev-mode: utility-first, novelty explicit — abstract to math essence + cross-domain sparks)
 2. **topic-viability-assessment** — score ONE idea: build the competitor DEEP-COMPARISON table first (never judge crowdedness from names); tier-aware (ask T1–T4 first)
 3. **adversarial-panel-audit** — adversarial same-model subagent panel BEFORE trusting any artifact
 4. **algorithm-design** — 4-step inventive design; autonomous + externalized reasoning; pause only at global forks
