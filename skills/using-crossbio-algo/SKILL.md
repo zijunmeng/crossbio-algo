@@ -23,6 +23,32 @@ research-intake  (user has data + research question)
   → code
 ```
 
+## Process Assurance (v0.3.1) — state-machine-enforced workflow
+
+The loop above is enforced by a **run-manifest** (state machine), not just prose. Each research task MUST start with:
+
+    crossbio init-run runs/<name> --mode standard --tier T2
+
+This creates `run-manifest.json` tracking each stage's status (PENDING / COMPLETED / SKIPPED / BLOCKED).
+The agent CANNOT skip required stages silently:
+
+    crossbio next runs/<name>           → returns the ALLOWED_STAGE (gate)
+    crossbio complete-stage ...          → mark done + link artifact
+    crossbio skip-stage ... --reason ... → skip with explicit justification
+    crossbio finalize runs/<name>        → READY_FOR_USER or PROVISIONAL_NONCOMPLIANT
+
+Attempting to emit a design before viability is COMPLETED → BLOCKED (predecessor gate).
+A SKIPPED stage must have a reason_code (USER_DEFINED_SINGLE_DIRECTION / INSUFFICIENT_DATA / ...).
+Brainstorm may be skipped in Standard mode (with justification); Publication requires it.
+
+Two states are tracked independently:
+- **Scientific progress**: PROVISIONAL → DESIGNED → IMPLEMENTED → VALIDATED
+- **Process assurance**: UNTRACED → PARTIALLY_TRACED → PROCESS_COMPLIANT → ATTESTED
+
+A design can be scientifically sound (DESIGNED) but process-noncompliant (NONCOMPLIANT) —
+like the SPICE CCC case where the agent bypassed search/brainstorm/artifact/audit.
+`crossbio finalize` makes this distinction explicit.
+
 ## When to trigger each skill
 | Signal from the user | Skill |
 |---|---|

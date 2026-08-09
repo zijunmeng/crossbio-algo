@@ -2,6 +2,18 @@
 
 All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] — 2026-08-09 — Process Assurance Layer (state-machine-enforced workflow)
+
+### PROCESS enforcement (the CCC process-audit lesson: skills provide discipline but an agent can bypass the process)
+- `crossbio_validate/process.py` — RunManifest state machine: per-mode DAGs (quick/standard/publication),
+  stages with PENDING/COMPLETED/SKIPPED/BLOCKED status, predecessor gates.
+- `crossbio init-run` / `crossbio next` / `crossbio complete-stage` / `crossbio skip-stage` / `crossbio finalize` CLI.
+  `next` returns the ALLOWED_STAGE (gate enforcement — cannot jump to design before viability).
+  `finalize` outputs READY_FOR_USER or PROVISIONAL_NONCOMPLIANT (with missing list + artifact-chain check).
+- SKIPPED stages require a reason_code + justification (never SILENTLY_ABSENT).
+- Brainstorm: COMPLETED or SKIPPED_WITH_JUSTIFICATION (Standard can skip; Publication requires).
+- The two-state model: scientific progress (DESIGNED/IMPLEMENTED) × process assurance (COMPLIANT/NONCOMPLIANT).
+
 ## [0.3.0] — 2026-08-09 — the skill-effectiveness benchmark (minor: research-methodology milestone)
 
 ### SOURCE-BOUND ATTESTED -> SCIENTIFICALLY SUPPORTED (begins). The question this must answer: do the

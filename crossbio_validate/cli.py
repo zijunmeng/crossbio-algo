@@ -18,6 +18,7 @@ import os
 import sys
 
 from . import core
+from .process import RunManifest, VALID_SKIP_REASONS
 
 
 def _looks_like_artifact(d) -> bool:
@@ -171,10 +172,95 @@ def main(argv=None) -> int:
     at.add_argument("--bind", action="append", default=[],
                     help="source file to bind the attestation to (repeatable); the test target is always bound")
 
+    # ---- Process Assurance Layer (v0.3.1) ----
+    ir = sub.add_parser("init-run", help="create a run-manifest.json for a research task")
+    ir.add_argument("run_dir")
+    ir.add_argument("--mode", default="standard", choices=["quick", "standard", "publication"])
+    ir.add_argument("--tier", default="T2")
+
+    nx = sub.add_parser("next", help="get the ALLOWED stage (state-machine gate)")
+    nx.add_argument("run_dir")
+
+    cs = sub.add_parser("complete-stage", help="mark a stage completed + link artifact/evidence")
+    cs.add_argument("run_dir")
+    cs.add_argument("stage")
+    cs.add_argument("--artifact-id", default=None)
+    cs.add_argument("--evidence-manifest", default=None)
+
+    ss = sub.add_parser("skip-stage", help="skip a stage with explicit justification")
+    ss.add_argument("run_dir")
+    ss.add_argument("stage")
+    ss.add_argument("--reason", required=True, choices=sorted(VALID_SKIP_REASONS))
+    ss.add_argument("--justification", required=True)
+
+    fn = sub.add_parser("finalize", help="check process compliance → READY_FOR_USER or PROVISIONAL_NONCOMPLIANT")
+    fn.add_argument("run_dir")
+
     args = p.parse_args(argv)
 
     if args.cmd == "attest":
         return _run_attest(args.target, args.out, args.root, bind=args.bind)
+
+    # ---- Process Assurance Layer handlers (v0.3.1) ----
+    if args.cmd == "init-run":
+        m = RunManifest.create(args.run_dir, mode=args.mode, target_tier=args.tier)
+        print(f"run-manifest created: {m.path}")
+        print(f"  mode={args.mode} tier={args.tier}  next={m.allowed_stage()}")
+        return 0
+
+    if args.cmd == "next":
+        m = RunManifest.load(args.run_dir)
+        allowed = m.allowed_stage()
+        if allowed:
+            print(f"ALLOWED_STAGE={allowed}")
+        else:
+            status, _, _ = m.finalize()
+            print(f"NO_PENDING_STAGE  finalize={status}")
+        return 0
+
+    if args.cmd == "complete-stage":
+        m = RunManifest.load(args.run_dir)
+        try:
+            m.complete_stage(args.stage, artifact_id=args.artifact_id, evidence_manifest=args.evidence_manifest)
+            print(f"stage {args.stage} → completed  next={m.allowed_stage()}")
+        except ValueError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.cmd == "skip-stage":
+        m = RunManifest.load(args.run_dir)
+        try:
+            m.skip_stage(args.stage, args.reason, args.justification)
+            print(f"stage {args.stage} → skipped ({args.reason})  next={m.allowed_stage()}")
+        except ValueError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.cmd == "finalize":
+        m = RunManifest.load(args.run_dir)
+        status, missing, warnings = m.finalize()
+        print(f"PROCESS: {status}")
+        for w in warnings:
+            print(f"  WARN: {w}")
+        if missing:
+            print("MISSING:")
+            for item in missing:
+                print(f"  - {item}")
+        art_dir = os.path.join(args.run_dir, "artifacts")
+        if os.path.isdir(art_dir):
+            arts = [json.load(open(f)) for f in sorted(glob.glob(os.path.join(art_dir, "*.json")))]
+            arts = [d for d in arts if isinstance(d, dict) and "stage" in d and "stage_fields" in d]
+            if arts:
+                findings = core.validate_chain(arts, root=art_dir)
+                errs = [f for f in findings if f.severity == "ERROR"]
+                print(f"ARTIFACT_CHAIN: {'PASS' if not errs else 'FAIL'} ({len(arts)} artifacts, {len(errs)} errors)")
+            else:
+                print("ARTIFACT_CHAIN: ABSENT")
+        else:
+            print("ARTIFACT_CHAIN: ABSENT (no artifacts/ dir)")
+        return 0 if status == "READY_FOR_USER" else 1
 
     if args.cmd == "stamp":
         a = json.load(open(args.artifact))
