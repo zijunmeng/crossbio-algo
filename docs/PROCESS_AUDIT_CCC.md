@@ -8,14 +8,16 @@
 
 ## 一、实际过程(time-line)
 
-| 步骤 | skills 要求的 | agent 实际做的 | 合规? |
-|---|---|---|---|
-| ① 用户提方向 | 触发 `using-crossbio-algo` → 自动进 `data-and-estimand-audit` (GATE) | ✅ 做了 data-audit(审了 estimand / panel 约束 / ground truth / pseudoreplication) | ✅ |
-| ② 竞品查证 | `topic-viability-assessment` 硬规则:**"Never judge from memory. Verify with search first."** | ❌ **从记忆里列了 6 个工具(CellChat / COMMOT / NicheNet / CellPhoneDB / HoloNet / SpaTalk),没查 PubMed / bioRxiv** | ❌ 违反头号规则 |
-| ③ Brainstorm | 如果用户要多个候选 → `brainstorm` 5 轮;**R1 每条 trend/method 声明必须 verified** | ❌ **完全跳过 brainstorm**。直接从 data-audit 跳到 design | ❌ |
-| ④ algorithm-design | 先 `mathematical_abstraction`(抽象到数学本质)→ 再 `cross_domain_inspiration`(查跨域灵感表)→ 再 propose。推理外显。 | ❌ **没有走 abstraction→cross-domain 流程**。SPICE 的核心想法(空间因果 / IV / niche-controlled regression / distance-decay / observability 分级)全部来自 **agent 自己的直接推理**,不是从 cross-domain-inspiration.md 挖出来的 | ❌ 违反 process |
-| ⑤ artifact 输出 | 每阶段 emit `artifact.json`(data-audit / design / spec),用 `validate-chain` 校验 | ❌ **没有 emit 任何 artifact.json**。只输出了 Markdown 设计文档 | ❌ |
-| ⑥ adversarial-panel-audit | Standard 模式最后 1 round 审计 | ❌ 跳过 | ❌ |
+
+| 步骤                        | skills 要求的                                                                                   | agent 实际做的                                                                                                                                                                                | 合规?          |
+| ------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| ① 用户提方向                   | 触发 `using-crossbio-algo` → 自动进 `data-and-estimand-audit` (GATE)                              | ✅ 做了 data-audit(审了 estimand / panel 约束 / ground truth / pseudoreplication)                                                                                                                | ✅            |
+| ② 竞品查证                    | `topic-viability-assessment` 硬规则:**"Never judge from memory. Verify with search first."**    | ❌ **从记忆里列了 6 个工具(CellChat / COMMOT / NicheNet / CellPhoneDB / HoloNet / SpaTalk),没查 PubMed / bioRxiv**                                                                                    | ❌ 违反头号规则     |
+| ③ Brainstorm              | 如果用户要多个候选 → `brainstorm` 5 轮;**R1 每条 trend/method 声明必须 verified**                            | ❌ **完全跳过 brainstorm**。直接从 data-audit 跳到 design                                                                                                                                            | ❌            |
+| ④ algorithm-design        | 先 `mathematical_abstraction`(抽象到数学本质)→ 再 `cross_domain_inspiration`(查跨域灵感表)→ 再 propose。推理外显。 | ❌ **没有走 abstraction→cross-domain 流程**。SPICE 的核心想法(空间因果 / IV / niche-controlled regression / distance-decay / observability 分级)全部来自 **agent 自己的直接推理**,不是从 cross-domain-inspiration.md 挖出来的 | ❌ 违反 process |
+| ⑤ artifact 输出             | 每阶段 emit `artifact.json`(data-audit / design / spec),用 `validate-chain` 校验                   | ❌ **没有 emit 任何 artifact.json**。只输出了 Markdown 设计文档                                                                                                                                         | ❌            |
+| ⑥ adversarial-panel-audit | Standard 模式最后 1 round 审计                                                                     | ❌ 跳过                                                                                                                                                                                      | ❌            |
+
 
 **结论:7 步里只有第 1 步(data-audit)合规。** 后面 5 步全部走了捷径。
 
@@ -41,18 +43,21 @@
 
 ### 根因 1:skills 有 DECLARED 规则,但没有 ENFORCEMENT 机制
 
-| 规则 | 写在哪里 | enforced? |
-|---|---|---|
-| "Never judge from memory, search first" | topic-viability SKILL.md | ❌ 纯 prose,无 gate。agent 可以直接忽略 |
-| "brainstorm BEFORE viability BEFORE design" | using-crossbio-algo SKILL.md | ❌ 纯顺序建议,无 artifact 前置依赖强制 |
-| "every R1 claim must be verified" | brainstorm SKILL.md | ❌ 无机器检查(cite 了没有?) |
-| "emit artifact.json per stage" | _shared/handoff | ❌ 在 SCOUT example 里做了,但在 live use 里没有强制 |
+
+| 规则                                          | 写在哪里                         | enforced?                               |
+| ------------------------------------------- | ---------------------------- | --------------------------------------- |
+| "Never judge from memory, search first"     | topic-viability SKILL.md     | ❌ 纯 prose,无 gate。agent 可以直接忽略           |
+| "brainstorm BEFORE viability BEFORE design" | using-crossbio-algo SKILL.md | ❌ 纯顺序建议,无 artifact 前置依赖强制               |
+| "every R1 claim must be verified"           | brainstorm SKILL.md          | ❌ 无机器检查(cite 了没有?)                      |
+| "emit artifact.json per stage"              | _shared/handoff              | ❌ 在 SCOUT example 里做了,但在 live use 里没有强制 |
+
 
 **对比**:data-audit 的 `fatal_issues` 非空 → validate-chain **机器拒绝** → 这是 enforced。但 viability/brainstorm 的规则没有等价的机器 gate。
 
 ### 根因 2:artifact 链在 live loop 里不强制
 
 SCOUT example 里,每个阶段产出 artifact.json + validate-chain 校验。但当 agent **实际用 skills 设计一个新方法**时,它没有 emit 任何 artifact。artifact 链只在 example 里跑,不在 live use 里跑。这导致:
+
 - estimand continuity(rule 1)没人检查。
 - failure_boundary → acceptance trace(rule 2)没人检查。
 - provenance(rule 5)不存在。
@@ -89,6 +94,7 @@ adversarial-panel-audit 审的是**产出物**(design / spec / result),不是**�
 
 **现状**:audit 审产出物,不审流程。
 **改进**:adversarial-panel-audit 加一个 reviewer-role:**"process-auditor"** —— 检查:
+
 - Did you search before claiming competitors?
 - Did you run brainstorm (or justify skipping)?
 - Did you emit artifacts?
@@ -107,6 +113,7 @@ adversarial-panel-audit 审的是**产出物**(design / spec / result),不是**�
 这次 CCC 设计过程**本身就是一个 benchmark 数据点**——而且是 **no-skill 的行为**(agent 跳过了 skills 的核心流程,虽然它"知道"这些规则)。
 
 如果把这个 CCC 设计放进 v0.3 benchmark 的 no-skill 槽:
+
 - agent(作为 no-skill)产出了一个自洽的设计(SPICE)。
 - 但 competitor list 来自记忆(可能漏/错)。
 - 没走 brainstorm(可能错过了更好的方向)。
@@ -114,6 +121,7 @@ adversarial-panel-audit 审的是**产出物**(design / spec / result),不是**�
 - 没有 search-performed 的证据。
 
 **如果 Standard 模式正确执行**,它应该:
+
 - search PubMed → 发现 CellWHISPER (2026)、Spacia (multiple-instance learning)、GAT-co-attention 等记忆里没有的工具。
 - 走 brainstorm R1-R5 → 可能发现 SPICE 不是唯一/最好的方向。
 - emit artifact chain → validate-chain 机器校验。
@@ -122,24 +130,7 @@ adversarial-panel-audit 审的是**产出物**(design / spec / result),不是**�
 
 ---
 
-## 修正(评审反馈后)
-
-原报告将 SPICE 标记为 "no-skill"。修正:**SPICE 是 treatment-noncompliant**(agent 加载了 skills,
-estimand/observability/kill-switch 的纪律影响了产出,但跳过了 search/brainstorm/artifact/audit)。
-这比 no-skill 更重要——它测量 **adherence rate**:skills 存在时 agent 实际遵守流程的概率。
-
-Benchmark 应增加 ITT vs per-protocol 分析(intention-to-treat vs per-protocol):
-- ITT: 分配到 Standard 就算 treatment(不管是否遵守)→ 测总体部署效果
-- per-protocol: 只比真正完成 Standard pipeline 的 run → 测 skills 本身效力
-如果 per-protocol 效果大但 ITT 小 → 问题在 enforcement,不在 skill 效力。
-
-SPICE 的 IV(instrumental variable)有 identifiability 问题:sender ligand spatial variation
-不自动满足 IV 条件(relevance + exclusion restriction + independence)。ligand 表达受 hypoxia/
-cell-state/niche 影响 → 这些也影响 receiver response → IV 可能无效。这正是"聪明的跨域类比
-最容易生成漂亮但不可识别的方法"的标准案例,也是 literature search + adversarial audit 必要性的证据。
-
-v0.3.1 修复方向(已实施): state-machine-enforced workflow(run-manifest + crossbio next/finalize)。
-
 ## 六、一句话总结
 
 > crossbio-algo 的 skills 提供了正确的 discipline(estimand / failure boundaries / observability / kill-switch),但缺少 **process enforcement**(search gate / artifact-chain-in-live-loop / process-audit)。一个"自信"的 agent(包括构建 skills 的 agent 自己)会跳过流程直接产出——产出的质量可能很高,但 evidence chain 是断裂的(没 search、没 artifact、没 validate)。**这是 v0.3.1 最该修的。**
+

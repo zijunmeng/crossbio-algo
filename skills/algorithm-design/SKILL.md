@@ -78,8 +78,16 @@ These are **not** turned into either/or questions for the user. The agent commit
 
 Run all four steps. At each step: **state the choice + the reason out loud** (推理外显), then continue. Do NOT stop to ask a binary question unless hitting a **global fork** (see below). Collect the up-front user decisions (Section A) first, then run.
 
-### 1. Mathematical Abstraction (first)
+### 1. Mathematical Abstraction (first) — with a Paradigm Scan
 Commit: "Abstracting this as fundamentally a **[X]** problem, because [reason tied to the data structure / goal]." Give the runner-up abstraction you rejected and why. Typical X: masked/sparse matrix completion • signal recovery on a graph • manifold regression with missing data • zero-inflated latent inference • distribution alignment (OT) • directed-graph / causal discovery • spectral clustering • ordered-structure (trajectory) recovery.
+
+**Paradigm scan (tier-aware, mandatory)**: before committing, name the field's **dominant paradigm** (the framing every existing paper shares — e.g., CCC = "co-expression + database lookup"; imputation = "denoise a matrix"). Then check the Paradigm Axes table (`cross-domain-inspiration.md` Section C): flip ≥2 axes and state what abstraction the flip produces. Rules by tier:
+- **T1** — the committed abstraction MUST be paradigm-different from the field's dominant paradigm, OR you must explicitly justify why the dominant paradigm still wins and where the novelty locus actually is. Defaulting to the dominant paradigm without this scan = invalid.
+- **T2** — you may stay in the dominant paradigm (rigorous combination can be T2), but you MUST show the scan: name one flipped-paradigm alternative and say why it does not serve this estimand better. Without the scan, "incremental" was not a choice — it was an anchor.
+- **T3/T4** — scan optional; solve the problem.
+
+The scan is a *search* discipline, not a *selection* rule: diverge at the paradigm level, then choose by utility (the complexity kill-switch still applies — a fancier paradigm is not a free pass).
+
 **Global fork (stop and ask) only if**: two abstractions lead to *entirely different algorithm families and validation paths* and you cannot pick on technical merit alone — then present both directions with the trade-off and let the user steer.
 
 ### 2. Cross-Domain Inspiration (optional spark — engage when it gives a non-obvious edge)

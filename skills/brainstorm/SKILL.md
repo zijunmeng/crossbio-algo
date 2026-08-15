@@ -58,9 +58,11 @@ Exit question: confirm the specific angle the user cares about (+ dev-mode const
 Actively hunt: unexplored entities / regions / windows, method limitations, contradictory findings, missing tools, under-sampled modalities, populations where findings don't replicate. In dev mode, gaps are often *method assumptions that break* (e.g. "every imputer assumes dropout ⊥ expression").
 **Hard rule:** at least one gap must be NON-confirming (contradicts or extends the consensus). If every gap merely restates the field's open todos, redo.
 
-### R3 — Cross-Domain
+### R3 — Cross-Domain + **Paradigm Divergence**
 - **research mode** — open `_shared/../algorithm-design/cross-domain-inspiration.md` (the essence→domains table). For each promising gap, mine ≥2 domains OUTSIDE the home field and name the concrete technique borrowed.
 - **dev mode** — first state each gap's **`algorithm_abstraction`** (what mathematical essence does this gap *fundamentally* reduce to?). Then open the cross-domain-inspiration table and mine ≥2 domains for that essence, naming the concrete technique borrowed. The abstraction is what unlocks non-obvious cross-domain sparks.
+
+- **PARADIGM DIVERGENCE (dev mode, mandatory)**: the FIRST abstraction an agent thinks of is almost always anchored to the field's dominant paradigm (the one every existing paper uses). To break out of 已有文章条条框框: before committing to any abstraction, name the field's **dominant paradigm** explicitly, then generate **≥3 fundamentally different abstractions** by flipping at least 2 paradigm axes from the **Paradigm Axes table** in `cross-domain-inspiration.md` (Section C). Example — CCC inference: field's dominant paradigm = *statistical association + database lookup*; paradigm-flipped alternatives = (a) *physics: ligand diffusion-reaction field equations*; (b) *information theory: cell types as communication channels with measurable transfer rates*; (c) *relational: the interaction (edge) as the unit of analysis, not the cell*. Commit to the abstraction with best utility — but SHOW the alternatives; do not silently default.
 
 - **AVOID THE FAMOUS-ALGORITHM TRAP (dev mode, mandatory)**: do NOT just borrow a famous named algorithm (EnKF / MVS / graph wavelet / Kalman / OT) — those are usually ALREADY applied in omics (Kalman→GRN, MVS→PASTE/MOS, SGWT→BioGSP). Before adopting a cross-domain method, **search whether it has already been applied in omics**; if yes, drop it or find an unused variant. Prefer mining the *mathematical structure* for solutions not yet ported to omics, over importing a famous algorithm's name.
 
@@ -75,6 +77,7 @@ Every field is mandatory. The point is to hand `algorithm-design` a rich seed, N
 | Field | Meaning |
 |---|---|
 | `title` | concise, specific |
+| `paradigm` | which paradigm this idea operates in (name it from the Paradigm Axes table, e.g. "physics/diffusion-reaction", "information-theoretic", "relational/graph"). **The N ideas must span ≥3 distinct paradigms** — if they all share the field's dominant paradigm, the ideation is not divergent enough → redo R3. |
 | `algorithm_abstraction` | object: **mathematical_essence** (the core problem class, e.g. "高维非线性动力系统的稳态推断", "masked signal recovery on a graph"); **computational_pattern** (the solving shape, e.g. "ODE 拟合 + 稳态求解", "graph wavelet thresholding"); **recommended_domains** (≥2 fields OUTSIDE the home field to mine, from the cross-domain table) |
 | `cross_domain_inspiration` | the concrete cross-domain technique (domain + method), e.g. "ensemble Kalman filter (meteorology data assimilation) → RNA-velocity vector-field smoothing". MUST reference the 28-domain table in the algorithm-design skill's `cross-domain-inspiration.md` attachment |
 | `hypothesis` | the testable claim the algorithm would enable / embody |

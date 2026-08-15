@@ -31,5 +31,26 @@ Reference for algorithm-design **Step 2 (Cross-Domain Inspiration)**. Mined from
 | directed influence / causality | Granger causality, Bayesian networks, structural causal models |
 | ordered-structure recovery | dynamical systems, RNA velocity, pseudotime / manifold learning |
 
+## C. Paradigm Axes — flip these to break out of the field's default framing
+
+The first abstraction an agent thinks of is anchored to the field's dominant paradigm. To genuinely diverge (范式不同), take the field's default framing and flip ≥2 of these axes:
+
+| Axis | Default (most fields) | Flip to |
+|---|---|---|
+| **机制 vs 关联** | statistical association (correlate, regress, permute) | physics/mechanism: write the process as field equations, reaction-diffusion, or a dynamical system |
+| **静态 vs 动力学** | static snapshot (one time, equilibrium assumed) | temporal dynamics: evolution, trajectories, transients |
+| **个体 vs 关系** | the entity (cell, gene, sample) is the unit | the relation/interaction is the unit; structure emerges from edges not nodes |
+| **全局 vs 局部** | one global model over all data | local models + consistency constraints; multiscale decomposition |
+| **代数 vs 几何/拓扑** | algebraic operations on vectors/matrices | geometric (manifolds, curvature, fiber bundles) or topological (persistent homology, connectivity) structure |
+| **确定性 vs 概率** | point estimate | full generative probability model with identifiable parameters |
+| **判别 vs 生成** | predict/estimate the output | simulate the data-generating process; the estimator is the inverse of the simulator |
+| **单目标 vs 博弈** | one objective to optimize | multiple agents with conflicting objectives (game-theoretic equilibrium) |
+| **信息 vs 能量** | fit / minimize error | information-theoretic limits (channel capacity, mutual information, MDL); or variational/energy principles |
+| **连续 vs 组合** | continuous optimization | discrete/combinatorial structure (matchings, flows, lattices, grammars) |
+
+**How to use**: (1) name the field's dominant paradigm; (2) pick 2-3 axes; (3) flip them; (4) write down what abstraction the flip produces (one sentence); (5) judge it on utility vs the dominant paradigm — is the flipped framing closer to the true data-generating mechanism, or just different? Keep the one that serves the estimand better. **Flipping is a search strategy, not a selection rule** — a paradigm-different design that fails the utility bar loses to a rigorous in-paradigm one; but you only get to claim "the dominant paradigm is best" AFTER looking at the flips.
+
+**Worked example — cell-cell communication (the SPICE lesson)**: field's dominant paradigm = *statistical association* (co-expression + database lookup). Flips: (a) mechanism → model ligand as a diffusion-reaction field over tissue space, receptor activation as local absorption — signaling becomes a PDE inverse problem; (b) relation → make the interaction (edge), not the cell, the statistical unit; estimate edge-level confidence directly; (c) information → treat sender/receiver as a communication channel; ask what is the transfer rate and what bounds it. Each flip produces a different algorithm family AND a different validation path — that is the point.
+
 ## Rule
-Table A tells you **which fields** to mine; Table B tells you **which methods** those fields use. Use both — name the domain AND the specific technique borrowed.
+Table A tells you **which fields** to mine; Table B tells you **which methods** those fields use; Table C tells you **how to re-frame the problem itself**. Use A+B+C — name the domain, the specific technique, and (for T1/T2) the paradigm you are in vs the field's default.

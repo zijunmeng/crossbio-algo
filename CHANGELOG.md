@@ -2,6 +2,27 @@
 
 All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] — 2026-08-16 — Paradigm Divergence (break out of existing-paper framing)
+
+The agent's first abstraction is anchored to the field's dominant paradigm. v0.3.2 forces a
+paradigm scan before committing, so ideas span genuinely different framings (范式不同), not
+just variants of what every existing paper does.
+
+- `cross-domain-inspiration.md` Section C: **Paradigm Axes table** — 10 orthogonal axes
+  (mechanism-vs-association, static-vs-dynamic, entity-vs-relation, algebraic-vs-geometric,
+  discriminative-vs-generative, single-vs-game, information-vs-energy, ...) with the instruction:
+  name the field's dominant paradigm, flip >=2 axes, see what abstraction emerges. Flipping is a
+  SEARCH strategy, not a selection rule — the utility bar and the complexity kill-switch still apply.
+- `brainstorm` R3: **Paradigm Divergence mandatory (dev mode)** — >=3 fundamentally different
+  abstractions before committing; R4 dev-mode schema gains a `paradigm` field; the N candidate
+  ideas must span >=3 distinct paradigms or the ideation is not divergent enough (redo).
+- `algorithm-design` Step 1: **Paradigm Scan (tier-aware)** — T1 must be paradigm-different
+  (or explicitly justify why the dominant paradigm wins); T2 may stay in-paradigm but MUST show
+  one flipped alternative and why it loses; without the scan, 'incremental' was an anchor, not a choice.
+- Worked example: the CCC/SPICE case — dominant paradigm 'co-expression + DB lookup' vs
+  paradigm-flipped alternatives (diffusion-reaction PDE inverse problem; edge-as-unit relational;
+  communication-channel information rate).
+
 ## [0.3.1] — 2026-08-09 — Process Assurance Layer (state-machine-enforced workflow)
 
 ### PROCESS enforcement (the CCC process-audit lesson: skills provide discipline but an agent can bypass the process)
