@@ -15,7 +15,9 @@ Keep the skill chain honest across the FULL loop, not just viability→design. T
 research-intake  (user has data + research question)
   → data-and-estimand-audit  (GATE before brainstorm: audit data+estimand)
       ✋ fatal_issues non-empty → STOP until resolved or user accepts risk
-  → brainstorm  (N candidate ideas)
+  → method-tension-miner  (v0.4.0: mine evidence-traceable methodological tensions → falsifiable
+      competing hypotheses; mode-gated — see Effort Modes; NO_QUALIFIED_TENSION is a valid outcome)
+  → brainstorm  (N candidate ideas; tension cards are ONE input source — never the only one)
   → topic-viability  (score each under target tier; pick)
       ★ adversarial-panel-audit  (adversarial review of the assessment)
   → algorithm-design  (formal-method-contract design, under competitor constraint)
@@ -27,15 +29,19 @@ research-intake  (user has data + research question)
 ```
 adversarial-panel-audit is **horizontal** — it fires at EACH ★ before the artifact is trusted.
 data-and-estimand-audit is a **GATE** — it runs once, before brainstorm, and blocks the loop on fatal issues.
+method-tension-miner is **mode-gated** — Publication requires it (cannot silently skip; if it
+cannot run, `crossbio block-stage method_tension` and the run is PROVISIONAL_NONCOMPLIANT);
+Standard runs it for discovery-type tasks; Quick defaults off (pre-recorded skip reason).
+For tension-derived ideas the audit panel includes the **methodological-skeptic** seat.
 
 ## Effort Modes (Quick / Standard / Publication)
-The full loop above is **Publication** mode. Not every task needs the full closed loop — a quick buildability check or a T3 exercise doesn't earn back the cost of brainstorm + viability + multi-round audit. So there are three effort tiers. **State the effort mode out loud** at the start of a run.
+The full loop above is **Publication** mode. Not every task needs the full closed loop — a quick buildability check or a T3 exercise doesn't earn back the cost of tension mining + brainstorm + viability + multi-round audit. So there are three effort tiers. **State the effort mode out loud** at the start of a run.
 
 | Mode | Runs | Skips | ~Time | Fits |
 |---|---|---|---|---|
-| **Quick** | data-and-estimand-audit → algorithm-design-lite (only `problem_definition` / `estimand` / `objective_or_likelihood` / `failure_boundaries`) → basic tests | brainstorm, topic-viability, full formal-method-contract design, full spec, adversarial-panel-audit | ~30 min | "is this idea buildable / quick sanity?", T3 learning, T4 internal one-off (NOT a viability/competitor check) |
-| **Standard** | data-and-estimand-audit → topic-viability-assessment (deep-comparison + multi-dim score) → algorithm-design (full formal-method-contract) → spec-writing (kiro 3-phase) → 1 round adversarial-panel-audit | brainstorm (user already has the one idea) | ~half day | T2 tool paper; lightest mode that answers "is this idea worth doing?" (competitor deep-comparison + viability score) |
-| **Publication** | the **full closed loop**: brainstorm (≥3 ideas) → viability → multi-round adversarial-panel-audit → algorithm-design (formal) → spec-writing (kiro) → benchmark → Publication Roadmap | nothing | ~multiple days | T1 top-tier / complete publication |
+| **Quick** | data-and-estimand-audit → algorithm-design-lite (only `problem_definition` / `estimand` / `objective_or_likelihood` / `failure_boundaries`) → basic tests | method-tension-miner (pre-recorded skip; enable with `--tension` for a narrow discovery scan), brainstorm, topic-viability, full formal-method-contract design, full spec, adversarial-panel-audit | ~30 min | "is this idea buildable / quick sanity?", T3 learning, T4 internal one-off (NOT a viability/competitor check) |
+| **Standard** | data-and-estimand-audit → [method-tension-miner: RUN if discovery-type task, else explicit skip] → topic-viability-assessment (deep-comparison + multi-dim score) → algorithm-design (full formal-method-contract) → spec-writing (kiro 3-phase) → 1 round adversarial-panel-audit | brainstorm (user already has the one idea) | ~half day | T2 tool paper; lightest mode that answers "is this idea worth doing?" (competitor deep-comparison + viability score) |
+| **Publication** | the **full closed loop**: method-tension-miner (required) → brainstorm (≥3 ideas) → viability → multi-round adversarial-panel-audit → algorithm-design (formal) → spec-writing (kiro) → benchmark → Publication Roadmap | nothing | ~multiple days | T1 top-tier / complete publication |
 
 ### Mode selection
 - User picks explicitly, OR auto-infer from target tier: **T3/T4 → Quick, T2 → Standard, T1 → Publication**. User can override anytime.
@@ -79,7 +85,8 @@ SPEC_HANDOFF:
 
 ## Stage obligations
 - **data-and-estimand-audit**: 审计数据+estimand（biological_unit / leakage / ground_truth / fatal_issues）；产出 data audit artifact；**brainstorm/algorithm-design 必须在 fatal_issues 为空（或用户显式接受风险）后才能开始**。
-- **brainstorm**: emit ≥3 candidates with ≥1 non-confirming gap; verify trends (no memory); hand off the set.
+- **method-tension-miner** (v0.4.0): 从可追溯文献证据中挖掘方法学张力（7 类分类 + 证据状态标注），把合格张力转化为带判别实验的可证伪竞争假设；产出 `method-tension` artifact（链在 data-audit 之下）；**找不到合格张力是合法输出**（`no_qualified_tension` + 完整检索记录）；不得虚构矛盾，不得把"没搜到"写成"没人研究过"。
+- **brainstorm**: emit ≥3 candidates with ≥1 non-confirming gap; verify trends (no memory); tension cards (if present) are ONE input — record each candidate's `source` and `tension_ids`; hand off the set.
 - **topic-viability**: score under target_tier; if low + user insists → informed choice (accept tier risk / lock improvable axis / supply info); emit VIABILITY_HANDOFF.
 - **algorithm-design**: receive VIABILITY_HANDOFF; `novelty_or_utility_basis` MUST address delta vs each top_competitor (tier-dependent); autonomous run with externalized reasoning, pause only at global forks; emit the formal method contract.
 - **spec-writing**: receive DESIGN_HANDOFF; spec MUST be executable-level (no vague verbs like "do clustering"); acceptance criteria MUST map to `failure_boundary`; emit SPEC_HANDOFF.
@@ -104,7 +111,9 @@ Markdown-only handoffs **drift**. Real example: SCOUT's design.md said `Truncate
 ```
 data-audit  (ROOT)  stage_fields: biological_unit / estimand / fatal_issues / cohort_structure / leakage_graph / split_strategy
    ↓ estimand propagates to ALL downstream stages
-design             stage_fields: problem_definition / estimand / notation_and_shapes / objective_or_likelihood / identifiability / failure_boundaries / complexity
+method-tension (v0.4.0, mode-gated)  stage_fields: scope / search_protocol / method_cards / evidence_items / tensions (each with type + evidence_status + mechanism_hypotheses + predictions + discriminating_experiment + falsification_criteria + novelty_status) / result_status
+   ↓ tension_ids propagate to brainstorm candidates and (for tension-derived ideas) design
+design             stage_fields: problem_definition / estimand / notation_and_shapes / objective_or_likelihood / identifiability / failure_boundaries / complexity (+ six tension-resolution fields when tension-derived)
    ↓ failure_boundaries + notation_and_shapes propagate to spec
 spec              stage_fields: module_interfaces / acceptance_criteria (each traces_to a failure_boundary) / pseudocode_hashes
    ↓

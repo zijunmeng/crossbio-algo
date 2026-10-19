@@ -13,7 +13,9 @@ This is the **bootstrap** for the crossbio-algo skill loop — a coordinated cha
 research-intake  (user has data + research question)
   → data-and-estimand-audit  (GATE: audit donor leakage / batch / sample unit / ground truth before any invention)
       ✋ fatal issue → STOP until resolved or user accepts risk
-  → brainstorm  (N candidate ideas; dev-mode invents algorithms from math essence + cross-domain)
+  → method-tension-miner  (v0.4.0, mode-gated: mine evidence-traceable methodological tensions →
+      falsifiable competing hypotheses; NO_QUALIFIED_TENSION is a valid, honest outcome)
+  → brainstorm  (N candidate ideas; tension cards are ONE input; dev-mode invents algorithms from math essence + cross-domain)
   → topic-viability  (competitor DEEP-COMPARISON table → tier-aware score)
       ★ adversarial-panel-audit  (before trusting the verdict)
   → algorithm-design  (4-step inventive; autonomous + externalized reasoning)
@@ -27,7 +29,7 @@ research-intake  (user has data + research question)
 
 The loop above is enforced by a **run-manifest** (state machine), not just prose. Each research task MUST start with:
 
-    crossbio init-run runs/<name> --mode standard --tier T2
+    crossbio init-run runs/<name> --mode standard --tier T2 [--tension auto|required|optional|skipped]
 
 This creates `run-manifest.json` tracking each stage's status (PENDING / COMPLETED / SKIPPED / BLOCKED).
 The agent CANNOT skip required stages silently:
@@ -35,11 +37,16 @@ The agent CANNOT skip required stages silently:
     crossbio next runs/<name>           → returns the ALLOWED_STAGE (gate)
     crossbio complete-stage ...          → mark done + link artifact
     crossbio skip-stage ... --reason ... → skip with explicit justification
+    crossbio block-stage ... --reason ... → record a stage as BLOCKED (cannot run — never a silent skip)
     crossbio finalize runs/<name>        → READY_FOR_USER or PROVISIONAL_NONCOMPLIANT
 
 Attempting to emit a design before viability is COMPLETED → BLOCKED (predecessor gate).
 A SKIPPED stage must have a reason_code (USER_DEFINED_SINGLE_DIRECTION / INSUFFICIENT_DATA / ...).
 Brainstorm may be skipped in Standard mode (with justification); Publication requires it.
+method-tension-miner policy: Quick → pre-recorded skip (zero default cost); Standard → run it
+when the task is discovery-type (`--tension required`), else explicit skip; Publication →
+REQUIRED and gates brainstorm (if it cannot run: `crossbio block-stage` — the run stays
+PROVISIONAL_NONCOMPLIANT until resolved, which is the honest state).
 
 Two states are tracked independently:
 - **Scientific progress**: PROVISIONAL → DESIGNED → IMPLEMENTED → VALIDATED
@@ -53,6 +60,7 @@ like the SPICE CCC case where the agent bypassed search/brainstorm/artifact/audi
 | Signal from the user | Skill |
 |---|---|
 | 用户有数据 + 研究问题，在 brainstorm/design 前 | **data-and-estimand-audit** (GATE — 审计 donor 泄漏/批次/样本单位/ground truth；fatal issue 则停) |
+| "find new directions / 创新点 / 这个领域还有什么可做 / 方法学矛盾" (discovery-type task) | **method-tension-miner** (v0.4.0 — 挖掘证据可追溯的方法学张力 → 可证伪假设；跑完或诚实报告 NO_QUALIFIED_TENSION) |
 | "I want to explore a direction / find topics / get multiple ideas" | **brainstorm** (dev-mode if algorithm/tool; research-mode if biomedical direction) |
 | "Is this idea worth doing? / value it? / competitors?" | **topic-viability-assessment** (MUST build deep-comparison table first; ask target tier) |
 | "Design an algorithm / method for X" | **algorithm-design** (autonomous 4-step; externalize reasoning) |

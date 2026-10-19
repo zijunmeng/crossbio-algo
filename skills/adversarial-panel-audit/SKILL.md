@@ -16,7 +16,7 @@ A trusted artifact gets trusted because it survived attack, not because it read 
 3. **Complete the role's checklist, do not invent critique.** Each subagent MUST complete its role's full checklist (`reviewer-roles/<role>.md`). It is FORBIDDEN to return a vacuous "looks good / no issues" without having run the checklist. BUT a subagent that completes its checklist in good faith and finds **no material issue** SHOULD say so — do NOT manufacture a problem to fill a quota. Forced-finding quotas cause critique inflation (fabricated issues that waste revision cycles). Default to suspicion while *checking*; report what the check actually found.
 4. **Structured verdict.** Aggregate the panel → `pass` | `needs_revision` (list the exact fields to fix) | `fail`. Never emit "都挺好".
 
-## The 6 roles (one file each in `reviewer-roles/`)
+## The 7 roles (one file each in `reviewer-roles/`)
 | Role | Audits |
 |---|---|
 | **domain-biologist** | biology premise / mechanism plausibility / is the question biologically sound |
@@ -25,10 +25,11 @@ A trusted artifact gets trusted because it survived attack, not because it read 
 | **benchmark-auditor** | benchmark fairness / no leakage / naive baseline present |
 | **implementation-reviewer** | runnable / interfaces / boundary conditions / edge cases |
 | **reproducibility-reviewer** | seeds / environment / data availability / actually reproducible |
+| **methodological-skeptic** *(v0.4.0)* | tension→hypothesis→design chain: real contradiction vs estimand mismatch vs never-compared; mechanism vs post-hoc rationalization; does the discriminating experiment discriminate; novelty claims vs search evidence |
 
 These are reviewer-role prompt templates passed to the native Agent tool (information-isolated, role-specialized) — not registered plugin subagents. Promoting them to native plugin subagents (frontmatter + plugin-root `agents/`) is a documented future option.
 
-Read the relevant `reviewer-roles/<role>.md` for each role's full checklist before spawning it. **Pick 3** of the 6 for any single audit, chosen by what the artifact is. Optionally add a **defender / replicator** seat (see below).
+Read the relevant `reviewer-roles/<role>.md` for each role's full checklist before spawning it. **Pick 3** of the 7 for any single audit, chosen by what the artifact is. For a **method-tension artifact or a tension-derived design, methodological-skeptic is mandatory** (one of your 3). Optionally add a **defender / replicator** seat (see below).
 
 ## Optional — the defender / replicator seat
 A 4th (optional) subagent whose job is the *opposite* of the others: **refute or replicate** the findings the other panel members raised. It tries to reproduce each claimed problem from the artifact alone; a finding that cannot be reproduced or is shown to rest on a misread is **downgraded or dropped**. Purpose: filter false positives — the panel is adversarial toward the *artifact*, the defender is adversarial toward the *panel's findings*. Use this whenever the other three raised blocking/severe findings you might act on.

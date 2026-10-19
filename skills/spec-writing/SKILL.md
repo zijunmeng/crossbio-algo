@@ -28,6 +28,7 @@ spec-writing consumes the design's **formal method contract** (canonical schema:
 - `simulation_dgp` → test cases (every DGP regime becomes a test)
 - `optimization_or_inference` / `complexity` → engineering constraints
 - `novelty_or_utility_basis` → Publication Roadmap
+- **tension-derived designs (v0.4.0)**: `discriminating_predictions` / `minimum_discriminating_experiment` / `kill_criteria` → acceptance criteria + tests. Every important claim from the tension chain either maps to an acceptance criterion (verification_mode `simulation`/`benchmark` as appropriate) or is carried into the spec **explicitly labeled as an unverified scientific hypothesis** — rewriting a hypothesis into a confident conclusion in the spec is forbidden. Kill criteria become executable checks: the criterion's triggering result must map to a documented decision (simplify / remove / redesign), not a shrug.
 
 ## Output — three artifacts, all mandatory, sequential
 

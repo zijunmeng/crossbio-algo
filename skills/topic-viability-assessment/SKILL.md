@@ -44,6 +44,17 @@ Different topic types hide their competitors in different indexes; searching onl
 
 Always search ≥2 sources appropriate to the topic type. **Deliberately search for the naive baselines in the space** (zero-imputation, mean-filling, k-NN, linear regression) — they are the most important real competitors and reviewers will demand you beat them.
 
+**Tension-sourced ideas (v0.4.0)**: if the idea carries `tension_ids` from a method-tension
+artifact, the tension's `nearest_related_work` entries are the competitor search
+**starting point, never the endpoint** — verify each independently (they were scoped to
+the tension miner's search budget, not to yours), then search beyond them. Classify each
+found competitor explicitly: same research question / same estimand / similar core
+mechanism / only shared technical component — "method differs" ≠ "not a competitor".
+`possible_overlap` and `not_found_in_scoped_search` novelty statuses REQUIRE a
+human-review flag in the output. If a direct competitor exists, the idea falls back or is
+restructured (the loop's fallback mechanism) — renaming or bolting on a module to dodge
+the collision is forbidden.
+
 ## The 4 Questions
 1. Has this been rendered **OBSOLETE** by a paradigm shift?
 2. Is there evidence the core **PREMISE IS FLAWED**?

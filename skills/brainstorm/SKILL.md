@@ -57,6 +57,7 @@ Exit question: confirm the specific angle the user cares about (+ dev-mode const
 ### R2 — Gap Mining (FORBID all-confirming)
 Actively hunt: unexplored entities / regions / windows, method limitations, contradictory findings, missing tools, under-sampled modalities, populations where findings don't replicate. In dev mode, gaps are often *method assumptions that break* (e.g. "every imputer assumes dropout ⊥ expression").
 **Hard rule:** at least one gap must be NON-confirming (contradicts or extends the consensus). If every gap merely restates the field's open todos, redo.
+**Tension input (v0.4.0)**: if a `method-tension` artifact exists upstream (method-tension-miner), its qualified tensions are R2 INPUT — each tension's `claim` + `mechanism_hypotheses` is a pre-verified, evidence-traceable gap candidate. Use them; also still hunt your own. Tension input does NOT replace free exploration, paradigm divergence (R3), or cross-domain mining — a run where every idea descends from literature tensions is as impoverished as one with none.
 
 ### R3 — Cross-Domain + **Paradigm Divergence**
 - **research mode** — open `_shared/../algorithm-design/cross-domain-inspiration.md` (the essence→domains table). For each promising gap, mine ≥2 domains OUTSIDE the home field and name the concrete technique borrowed.
@@ -126,7 +127,8 @@ Those are the job of the **crossbio-algo:algorithm-design** skill, which receive
 - [ ] Each idea cites **≥2 cross-domain inspirations** from outside the home field.
 - [ ] Every idea carries ALL its mode's R4 fields — none optional.
 - [ ] Feasibility respects **the user's stated compute constraints** (GPU? stack? data?) — ask for them at R1 if unknown; do NOT assume any specific environment. Flag any idea needing heavy compute or resources the user doesn't have.
-- [ ] Each idea survived `novelty_verification` in R5.
+- [ ] Every idea survived `novelty_verification` in R5.
+- [ ] **Idea origin recorded (v0.4.0)**: every candidate carries `source` ∈ {`user_problem`, `paradigm_divergence`, `cross_domain_transfer`, `tension`} (or a combination); tension-derived ideas carry `tension_ids` that resolve to the upstream method-tension artifact (the validator's `tension-lineage` rule rejects dangling ids). For each tension-derived idea: state HOW the idea responds to the tension, and whether it introduces a new estimand / analysis unit / data representation / inference mechanism.
 - [ ] **dev mode only**: the idea is a SEED, not a full design (no deep math / failure boundary / simulation plan). Over-designing = scope-creep; trim to the seed.
 
 ## Red Flags — output is probably invalid if:

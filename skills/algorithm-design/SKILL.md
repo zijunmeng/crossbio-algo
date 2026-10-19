@@ -170,6 +170,26 @@ Three fields propagate downstream and are cross-stage-validated (`_shared/artifa
 - **`failure_boundaries`** propagate to spec — every boundary item MUST have a matching `spec.acceptance_criteria` with `traces_to` naming it (rule 2, no orphans).
 - **`notation_and_shapes`** propagate to spec — `spec.module_interfaces` shapes/names MUST match (rule 3; this is the rule that would have caught SCOUT's TruncatedSVD-vs-np.linalg.svd drift).
 
+### Tension-derived designs (v0.4.0) — six load-bearing fields
+If the idea originated from a `method-tension` artifact (`tension_ids` non-empty in the
+handoff), the design artifact MUST additionally carry — the validator's `tension-lineage`
+rule rejects a tension-derived design without them, because these are what spec/acceptance
+trace back to (spec §8.3; they must not live only in the brainstorm doc):
+
+| field | meaning |
+|---|---|
+| `tension_ids` | which tensions this design resolves (must resolve to the upstream method-tension artifact) |
+| `tension_resolution` | HOW the new method/design responds to the tension (not just "addresses it") |
+| `competing_explanations` | the mechanism explanations being distinguished |
+| `discriminating_predictions` | different observable predictions under the different explanations |
+| `minimum_discriminating_experiment` | the smallest experiment whose outcome separates those explanations |
+| `kill_criteria` | which results require abandoning / simplifying / restructuring the method |
+| `incremental_vs_structural_claim` | is the core contribution engineering improvement / method improvement / evaluation-paradigm change / new analysis capability — say which |
+
+`kill_criteria` are not decoration: if the discriminating experiment later kills the
+mechanism hypothesis, the existing complexity kill-switch discipline applies
+(`remove_or_redesign`) — "theoretically innovative" is not an exemption (AC-07).
+
 ## References
 - `cross-domain-inspiration.md` (in this folder) — the 28-domain essence→domains map + method pool.
 - `_shared/research-design-handoff.md` — the viability→design contract (read if chained from **crossbio-algo:topic-viability-assessment**).
