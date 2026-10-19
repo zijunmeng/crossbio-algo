@@ -1,0 +1,176 @@
+{
+  "artifact_id": "mt-example-001",
+  "stage": "method-tension",
+  "parent_artifact_id": "da-example-001",
+  "skill_version": "0.4.0",
+  "model": "illustrative-template",
+  "created_at": "2026-10-19T00:00:00",
+  "stage_fields": {
+    "scope": {
+      "research_question": "which scRNA-seq imputation method to trust in sparse 10x data",
+      "data_regime": [
+        "10x v3",
+        "sparse (median ~2k UMI/cell)",
+        "batch-structured",
+        "donor-replicated"
+      ],
+      "target_tier": "T2",
+      "literature_cutoff_date": "2026-10-01"
+    },
+    "search_protocol": {
+      "sources": [
+        "PubMed",
+        "bioRxiv",
+        "GitHub",
+        "methods sections of benchmark papers"
+      ],
+      "queries": [
+        "scRNA-seq imputation benchmark",
+        "imputation missing-not-at-random dropout",
+        "imputation MNAR evaluation"
+      ],
+      "searched_at": "2026-10-19",
+      "coverage_limitations": [
+        "English literature only",
+        "paywalled supplements not opened for 3 candidates",
+        "preprint cutoff 2024-01 for cross-checks"
+      ]
+    },
+    "method_cards": [
+      {
+        "method_id": "M1",
+        "name": "graph-smooth imputation (representative)",
+        "estimand": "the unobserved true expression at a dropout position",
+        "analysis_unit": "cell",
+        "assumptions": [
+          "dropout is MAR within each cell type",
+          "expression is smooth over the kNN graph"
+        ],
+        "validated_regimes": [
+          "10x v3, 5k cells/sample, MAR-simulated dropout"
+        ],
+        "reported_limitations": [
+          "authors report degraded performance when dropout correlates with expression level"
+        ],
+        "evidence_refs": [
+          "E1",
+          "E2"
+        ]
+      },
+      {
+        "method_id": "M2",
+        "name": "model-based dropout-aware imputation (representative)",
+        "estimand": "the unobserved true expression at a dropout position",
+        "analysis_unit": "cell",
+        "assumptions": [
+          "dropout probability depends on expression level (MNAR component)",
+          "zero-inflated mixture likelihood"
+        ],
+        "validated_regimes": [
+          "10x v2/v3 with depth-induced dropout"
+        ],
+        "reported_limitations": [
+          "runtime on >100k cells"
+        ],
+        "evidence_refs": [
+          "E3"
+        ]
+      }
+    ],
+    "evidence_items": [
+      {
+        "evidence_id": "E1",
+        "source_type": "primary_paper",
+        "title": "graph-smooth imputation method paper (illustrative)",
+        "year": 2023,
+        "doi_or_url": "https://example.org/doi/graph-smooth",
+        "locator": "Methods ' dropout model' paragraph; Supplement eq. S3",
+        "claim_supported": "the method assumes MAR dropout within cell type",
+        "evidence_strength": "direct",
+        "notes": "ILLUSTRATIVE TEMPLATE ENTRY — replace with real sources in a live run"
+      },
+      {
+        "evidence_id": "E2",
+        "source_type": "benchmark",
+        "title": "imputation benchmark study (illustrative)",
+        "year": 2024,
+        "doi_or_url": "https://example.org/doi/bench",
+        "locator": "Table 2 (RMSE by regime)",
+        "claim_supported": "graph-smooth wins under MAR-simulated dropout arms",
+        "evidence_strength": "direct",
+        "notes": "ILLUSTRATIVE TEMPLATE ENTRY"
+      },
+      {
+        "evidence_id": "E3",
+        "source_type": "benchmark",
+        "title": "imputation benchmark study (illustrative, MNAR arm)",
+        "year": 2025,
+        "doi_or_url": "https://example.org/doi/bench-mnar",
+        "locator": "Fig. 4 (ordering flip under MNAR)",
+        "claim_supported": "under expression-coupled MNAR dropout the ordering of methods reverses",
+        "evidence_strength": "direct",
+        "notes": "ILLUSTRATIVE TEMPLATE ENTRY"
+      }
+    ],
+    "tensions": [
+      {
+        "tension_id": "TENS-001",
+        "type": "empirical_contradiction",
+        "evidence_status": "observed",
+        "claim": "matched-regime benchmarks report opposite method orderings depending on whether the dropout simulation is MAR or expression-coupled MNAR (E2 vs E3)",
+        "method_refs": [
+          "M1",
+          "M2"
+        ],
+        "evidence_refs": [
+          "E2",
+          "E3"
+        ],
+        "mechanism_hypotheses": [
+          {
+            "hypothesis": "graph-smooth's advantage is MAR-specific: smoothing borrows information whose missingness pattern violates the MAR assumption it was tuned under",
+            "supporting_evidence_refs": [
+              "E1",
+              "E2",
+              "E3"
+            ],
+            "alternative_explanations": [
+              "the two benchmarks differ in cell-type composition, not in missingness mechanism",
+              "different preprocessing (normalization) drives the flip"
+            ]
+          }
+        ],
+        "predictions": [
+          "graph-smooth's RMSE advantage disappears monotonically as the MNAR coupling strength increases, while model-based methods degrade slower"
+        ],
+        "discriminating_experiment": "Simulate dropout with a coupling parameter interpolating MAR→MNAR on the SAME count matrix and cell-type composition; compare both methods at each coupling strength. If the ordering flips within the interpolated range, mechanism 1 is supported; if the ordering is stable but absolute errors shift, the composition/preprocessing explanations gain support.",
+        "falsification_criteria": [
+          "graph-smooth retains its advantage at maximum MNAR coupling",
+          "the flip reproduces when cell-type composition is held fixed and only normalization differs"
+        ],
+        "impact_if_true": "imputation benchmarks without an explicit MNAR arm cannot rank methods for real 10x data; evaluation-design contribution",
+        "impact_if_false": "ordering differences are benchmark artifacts of composition/preprocessing; methods guidance unchanged",
+        "novelty_status": "possible_overlap",
+        "nearest_related_work": [
+          "MNAR-aware simulation studies in single-cell (search: 'imputation MNAR evaluation', 2023-2025)"
+        ],
+        "confidence_rationale": "both orderings directly reported (direct evidence on each side); mechanism consistent with M1's own stated assumption; composition alternative not yet excluded",
+        "conflict_regime": [
+          "sparse 10x with expression-coupled dropout"
+        ]
+      }
+    ],
+    "result_status": "qualified_tensions_found",
+    "limitations": [
+      "two representative methods only",
+      "illustrative template — sources are placeholders, not real citations"
+    ]
+  },
+  "inputs": {
+    "data_audit_artifact": "da-example-001"
+  },
+  "assumptions": [
+    "template run assumes the data-audit artifact exists and has no fatal issues"
+  ],
+  "provenance_hash": "322a76f713ae"
+}

@@ -8,5 +8,5 @@
   "license": "MIT",
   "homepage": "https://github.com/zijunmeng/crossbio-algo",
   "keywords": ["bioinformatics", "computational-biology", "algorithm-design", "research", "single-cell", "spatial-omics"],
-  "skills": ["skills/using-crossbio-algo", "skills/data-and-estimand-audit", "skills/brainstorm", "skills/topic-viability-assessment", "skills/algorithm-design", "skills/spec-writing", "skills/adversarial-panel-audit"]
+  "skills": ["skills/using-crossbio-algo", "skills/data-and-estimand-audit", "skills/method-tension-miner", "skills/brainstorm", "skills/topic-viability-assessment", "skills/algorithm-design", "skills/spec-writing", "skills/adversarial-panel-audit"]
 }
