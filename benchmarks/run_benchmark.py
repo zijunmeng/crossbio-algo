@@ -126,6 +126,37 @@ def cmd_summary(cases):
     return 0
 
 
+def cmd_qhy(cases):
+    """Qualified Hypothesis Yield aggregation (v0.4.0 tension study, spec §11.4).
+    Reads each run's qhy-grading.json: {grader: {"hypotheses": [{"gates": {..6 bools..}}]}}.
+    A hypothesis is qualified for a grader iff all 6 gates are true. Run QHY = mean over
+    graders of the qualified count. Reports per-run values + per-group spread — never means
+    only. Runs without grading files print as ungraded (no fabrication)."""
+    for case in cases:
+        cd = os.path.join(CASES, case)
+        rundirs = sorted(glob.glob(os.path.join(cd, "runs", "*")))
+        print(f"\n# {case} (QHY)")
+        for rd in rundirs:
+            meta = json.load(open(os.path.join(rd, "meta.json"))) if os.path.isfile(os.path.join(rd, "meta.json")) else {}
+            group = meta.get("group", meta.get("mode", "?"))
+            gp = os.path.join(rd, "qhy-grading.json")
+            if not os.path.isfile(gp):
+                print(f"  {os.path.basename(rd):28} [{group:8}] UNGRADED (no qhy-grading.json — do not invent)")
+                continue
+            g = json.load(open(gp))
+            per_grader = []
+            for grader, blob in g.items():
+                if not isinstance(blob, dict):
+                    continue
+                qs = [h for h in blob.get("hypotheses", [])
+                      if isinstance(h.get("gates"), dict) and all(h["gates"].get(k["id"]) is True for k in json.load(open(os.path.join(ROOT, "qhy-rubric.json")))["gates"])]
+                per_grader.append(len(qs))
+            qhy = sum(per_grader) / len(per_grader) if per_grader else 0
+            spread = f" (graders: {per_grader})" if len(per_grader) > 1 else ""
+            print(f"  {os.path.basename(rd):28} [{group:8}] QHY={qhy:.2f}{spread}")
+    return 0
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -137,6 +168,8 @@ def main():
         return cmd_objective(sys.argv[2:])
     if cmd == "summary":
         return cmd_summary(sys.argv[2:])
+    if cmd == "qhy":
+        return cmd_qhy(sys.argv[2:])
     print(__doc__)
     return 2
 

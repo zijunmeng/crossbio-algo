@@ -1,0 +1,18 @@
+{
+  "endpoint": "Qualified Hypothesis Yield (QHY) — pre-registered hard gates (v0.4.0, frozen BEFORE any grading; see tension-mining-DESIGN.md)",
+  "scoring": "per candidate hypothesis, each gate scored by EACH independent grader as true/false; a hypothesis is QUALIFIED for that grader iff all 6 gates are true; run-level QHY = mean across graders of qualified counts; report per-run values + distribution + inter-grader disagreement",
+  "gates": [
+    {"id": "traceable_evidence", "question": "Every load-bearing literature claim carries a real source + locator; spot-check of >=3 citations finds no fabrication and no misrepresentation.", "note": "one fabricated/misread load-bearing citation => gate false"},
+    {"id": "real_delta", "question": "The hypothesis is clearly and substantially different from the nearest related work found, OR is explicitly flagged as requiring human novelty review with the search scope recorded.", "note": "'we did not find anything similar' without a scoped search record => gate false"},
+    {"id": "mechanism_not_recombination", "question": "The hypothesis names a mechanism, assumption conflict, or data-regime interaction — not merely a new algorithm name, a parameter change, or 'apply X to domain Y' without a stated reason why X's assumptions matter here.", "note": ""},
+    {"id": "discriminating_experiment", "question": "An executable experiment is stated whose DIFFERENT outcome patterns support the DIFFERENT competing explanations; which result would refute the favored explanation is explicit.", "note": "'validate on more data' / 'compare several methods' => gate false"},
+    {"id": "explicit_failure_standard", "question": "The hypothesis states in advance the observable result(s) that would refute or kill it (falsification criteria exist and are concrete).", "note": ""},
+    {"id": "worth_testing", "question": "Resolving the hypothesis would change method choice or scientific interpretation for a problem the user plausibly has data for; not a self-licking ice cream cone.", "note": ""}
+  ],
+  "forbidden": [
+    "AI self-scores as sufficient evidence for any gate",
+    "grading with knowledge of the group (unblinded)",
+    "counting near-duplicates of the same underlying hypothesis as independent",
+    "editing run outputs before grading"
+  ]
+}
