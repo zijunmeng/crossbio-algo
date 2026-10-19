@@ -4,7 +4,7 @@ Subcommands:
   validate         <artifact.json>   validate ONE artifact (schema + provenance)
   validate-chain   <dir>             validate a dir of artifact.json as a chain
                                      (schema + parent-chain + stage-order + fatal-gate
-                                      + 8 content rules: 5 cross-stage + 3 executable-trace)
+                                      + 11 content rules: 5 cross-stage + 3 executable-trace + 3 method-tension)
   validate-project <dir>             scan a project dir for artifacts and validate-chain
   stamp            <artifact.json>   write the correct provenance_hash (authoring helper)
 """
@@ -149,7 +149,7 @@ def main(argv=None) -> int:
 
     vc = sub.add_parser(
         "validate-chain",
-        help="validate a dir of artifact.json: schema + chain + 8 content rules (5 cross-stage + 3 executable-trace)",
+        help="validate a dir of artifact.json: schema + chain + 11 content rules (5 cross-stage + 3 executable-trace + 3 method-tension)",
     )
     vc.add_argument("dir")
 

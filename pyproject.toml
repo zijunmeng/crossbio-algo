@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "crossbio-algo-validator"
 version = "0.4.0"
-description = "crossbio-algo machine-checkable artifact validator (schema + chain + 8 content rules (5 cross-stage + 3 executable-trace))"
+description = "crossbio-algo machine-checkable artifact validator (schema + chain + 11 content rules (5 cross-stage + 3 executable-trace + 3 method-tension))"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
