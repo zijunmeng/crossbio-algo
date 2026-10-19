@@ -1,0 +1,286 @@
+[
+  {
+    "artifact_id": "da-neg",
+    "stage": "data-audit",
+    "parent_artifact_id": null,
+    "skill_version": "0.4.0",
+    "stage_fields": {
+      "biological_unit": "donor",
+      "estimand": "the unobserved true count at a dropout position",
+      "fatal_issues": [],
+      "cohort_structure": "12 donors",
+      "leakage_graph": "donor-level split",
+      "split_strategy": "donor-level 5-fold"
+    },
+    "provenance_hash": "619cea5f726b"
+  },
+  {
+    "artifact_id": "mt-neg",
+    "stage": "method-tension",
+    "parent_artifact_id": "da-neg",
+    "skill_version": "0.4.0",
+    "stage_fields": {
+      "scope": {
+        "research_question": "which imputation method to trust in sparse 10x data",
+        "data_regime": [
+          "10x v3",
+          "sparse"
+        ],
+        "target_tier": "T2",
+        "literature_cutoff_date": "2026-10-01"
+      },
+      "search_protocol": {
+        "sources": [
+          "PubMed",
+          "bioRxiv"
+        ],
+        "queries": [
+          "scRNA imputation benchmark",
+          "imputation MNAR"
+        ],
+        "searched_at": "2026-10-19",
+        "coverage_limitations": [
+          "English only"
+        ]
+      },
+      "method_cards": [
+        {
+          "method_id": "M1",
+          "name": "Method M1",
+          "estimand": "the unobserved true count at a dropout position",
+          "analysis_unit": "cell",
+          "assumptions": [
+            "MAR within cell type"
+          ],
+          "validated_regimes": [
+            "10x v3"
+          ],
+          "reported_limitations": [
+            "fixture"
+          ],
+          "evidence_refs": [
+            "E1"
+          ]
+        },
+        {
+          "method_id": "M2",
+          "name": "Method M2",
+          "estimand": "the unobserved true count at a dropout position",
+          "analysis_unit": "cell",
+          "assumptions": [
+            "expression-coupled dropout"
+          ],
+          "validated_regimes": [
+            "10x v3"
+          ],
+          "reported_limitations": [
+            "fixture"
+          ],
+          "evidence_refs": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence_items": [
+        {
+          "evidence_id": "E1",
+          "source_type": "primary_paper",
+          "title": "Bench A vs Bench B orderings flip",
+          "year": 2025,
+          "doi_or_url": "https://example.org/doi/E1",
+          "locator": "Table 1",
+          "claim_supported": "orderings flip with dropout mechanism",
+          "evidence_strength": "direct",
+          "notes": "fixture"
+        }
+      ],
+      "tensions": [
+        {
+          "tension_id": "TENS-001",
+          "type": "empirical_contradiction",
+          "evidence_status": "observed",
+          "claim": "orderings flip depending on dropout mechanism",
+          "method_refs": [
+            "M1",
+            "M2"
+          ],
+          "evidence_refs": [
+            "E1"
+          ],
+          "mechanism_hypotheses": [
+            {
+              "hypothesis": "graph-smoothing advantage is MAR-specific and disappears under MNAR",
+              "supporting_evidence_refs": [
+                "E1"
+              ],
+              "alternative_explanations": [
+                "sample composition differs"
+              ]
+            }
+          ],
+          "predictions": [
+            "fixture prediction"
+          ],
+          "discriminating_experiment": "Run both methods on the SAME matrix under the interpolated regime; the outcome pattern uniquely identifies which mechanism holds.",
+          "falsification_criteria": [
+            "ordering stable across the full interpolation range"
+          ],
+          "impact_if_true": "method guidance changes",
+          "impact_if_false": "artifact of composition",
+          "novelty_status": "possible_overlap",
+          "nearest_related_work": [
+            "fixture related work"
+          ],
+          "confidence_rationale": "fixture"
+        }
+      ],
+      "result_status": "qualified_tensions_found",
+      "limitations": [
+        "fixture"
+      ]
+    },
+    "provenance_hash": "c7ab52203460"
+  },
+  {
+    "artifact_id": "br-neg",
+    "stage": "brainstorm",
+    "parent_artifact_id": "mt-neg",
+    "skill_version": "0.4.0",
+    "stage_fields": {
+      "candidates": [
+        {
+          "title": "coupling-interpolated benchmark",
+          "hypothesis": "method rankings are MAR-specific",
+          "gap": "no MNAR arm in benchmarks",
+          "novelty_locus": "evaluation design",
+          "source": "tension",
+          "tension_ids": [
+            "TENS-001"
+          ]
+        }
+      ],
+      "chosen_id": 0
+    },
+    "provenance_hash": "79863ec82d48"
+  },
+  {
+    "artifact_id": "de-neg",
+    "stage": "design",
+    "parent_artifact_id": "br-neg",
+    "skill_version": "0.4.0",
+    "stage_fields": {
+      "problem_definition": "benchmark with interpolated MAR-MNAR coupling",
+      "estimand": "the unobserved true count at a dropout position",
+      "notation_and_shapes": {
+        "shapes": {
+          "X": "n×g"
+        }
+      },
+      "objective_or_likelihood": "evaluation harness; no fitted objective",
+      "identifiability": "ground truth by construction (simulation)",
+      "failure_boundaries": [
+        {
+          "id": "fb1",
+          "mechanism": "ordering flip absent — hypothesis refuted"
+        },
+        {
+          "id": "fb2",
+          "mechanism": "simulation DGP unrepresentative"
+        }
+      ],
+      "complexity": "O(n log n)",
+      "tension_ids": [
+        "TENS-001"
+      ],
+      "tension_resolution": "interpolated-coupling benchmark directly measures where the ordering flips",
+      "competing_explanations": [
+        "MAR-specific advantage",
+        "composition artifact"
+      ],
+      "discriminating_predictions": [
+        "M1 advantage decays monotonically with coupling strength if MAR-specific"
+      ],
+      "minimum_discriminating_experiment": "same matrix, coupling parameter sweep, both methods",
+      "kill_criteria": [
+        "if ordering is stable across the sweep, the MAR-specific hypothesis is dead: simplify to a plain benchmark note"
+      ],
+      "incremental_vs_structural_claim": "evaluation-design change",
+      "component_necessity": [
+        {
+          "component": "coupling-interpolation harness",
+          "current_result": {
+            "decision": "remove_or_redesign",
+            "evidence": "sweep showed stable ordering — the MAR-specific mechanism hypothesis was REFUTED (honest negative result; simplest surviving explanation: composition artifact)"
+          }
+        }
+      ]
+    },
+    "provenance_hash": "66744d6d0283"
+  },
+  {
+    "artifact_id": "sp-neg",
+    "stage": "spec",
+    "parent_artifact_id": "de-neg",
+    "skill_version": "0.4.0",
+    "stage_fields": {
+      "module_interfaces": {
+        "run_sweep": {
+          "out": {
+            "name": "scores",
+            "shape": "n×g"
+          }
+        }
+      },
+      "acceptance_criteria": [
+        {
+          "id": "ac1",
+          "traces_to": [
+            "fb2"
+          ],
+          "verification_mode": "analytic_argument",
+          "description": "DGP regime documented (null/adversarial/oracle/trivial)"
+        },
+        {
+          "id": "ac2",
+          "traces_to": [
+            "fb1"
+          ],
+          "verification_mode": "documented_limitation",
+          "description": "the MAR-specific mechanism hypothesis was REFUTED by the sweep (ordering stable); recorded as a limitation, NOT claimed passed"
+        }
+      ],
+      "pseudocode_hashes": {}
+    },
+    "provenance_hash": "c2c21509d62f"
+  },
+  {
+    "artifact_id": "co-neg",
+    "stage": "code",
+    "parent_artifact_id": "sp-neg",
+    "skill_version": "0.4.0",
+    "stage_fields": {
+      "module_hashes": {
+        "run_sweep": "deadbeef"
+      },
+      "test_results": {
+        "sweep": "ordering stable across full range — hypothesis refuted"
+      },
+      "acceptance_status": "ac1 analytic-argued; ac2 REFUTED and recorded as documented_limitation (kill executed: harness remove_or_redesign)",
+      "implementations": [],
+      "tests": [
+        {
+          "test_id": "t1",
+          "verifies_ac": "ac1",
+          "status": "passed"
+        },
+        {
+          "test_id": "t2",
+          "verifies_ac": "ac2",
+          "status": "known_limitation",
+          "pytest_nodeid": null
+        }
+      ]
+    },
+    "provenance_hash": "45e5c66e66aa"
+  }
+]

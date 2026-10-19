@@ -1,0 +1,141 @@
+{
+  "artifact_id": "mt-fixture-real",
+  "stage": "method-tension",
+  "parent_artifact_id": "da-fixture",
+  "skill_version": "0.4.0",
+  "stage_fields": {
+    "scope": {
+      "research_question": "which imputation method to trust in sparse 10x data",
+      "data_regime": [
+        "10x v3",
+        "sparse"
+      ],
+      "target_tier": "T2",
+      "literature_cutoff_date": "2026-10-01"
+    },
+    "search_protocol": {
+      "sources": [
+        "PubMed",
+        "bioRxiv"
+      ],
+      "queries": [
+        "scRNA imputation benchmark",
+        "imputation MNAR"
+      ],
+      "searched_at": "2026-10-19",
+      "coverage_limitations": [
+        "English only"
+      ]
+    },
+    "method_cards": [
+      {
+        "method_id": "M1",
+        "name": "Method M1",
+        "estimand": "true count at dropout position",
+        "analysis_unit": "cell",
+        "assumptions": [
+          "MAR within cell type"
+        ],
+        "validated_regimes": [
+          "10x v3"
+        ],
+        "reported_limitations": [
+          "fixture"
+        ],
+        "evidence_refs": [
+          "E1",
+          "E2"
+        ]
+      },
+      {
+        "method_id": "M2",
+        "name": "Method M2",
+        "estimand": "true count at dropout position",
+        "analysis_unit": "cell",
+        "assumptions": [
+          "expression-coupled dropout"
+        ],
+        "validated_regimes": [
+          "10x v3"
+        ],
+        "reported_limitations": [
+          "fixture"
+        ],
+        "evidence_refs": [
+          "E2"
+        ]
+      }
+    ],
+    "evidence_items": [
+      {
+        "evidence_id": "E1",
+        "source_type": "primary_paper",
+        "title": "Bench A: M1 beats M2",
+        "year": 2025,
+        "doi_or_url": "https://example.org/doi/E1",
+        "locator": "Table 1",
+        "claim_supported": "M1 > M2 under MAR-simulated dropout",
+        "evidence_strength": "direct",
+        "notes": "fixture"
+      },
+      {
+        "evidence_id": "E2",
+        "source_type": "primary_paper",
+        "title": "Bench B: M2 beats M1",
+        "year": 2025,
+        "doi_or_url": "https://example.org/doi/E2",
+        "locator": "Table 1",
+        "claim_supported": "M2 > M1 under expression-coupled MNAR dropout",
+        "evidence_strength": "direct",
+        "notes": "fixture"
+      }
+    ],
+    "tensions": [
+      {
+        "tension_id": "TENS-001",
+        "type": "empirical_contradiction",
+        "evidence_status": "observed",
+        "claim": "matched-regime benchmarks report opposite orderings depending on dropout mechanism (E1 vs E2)",
+        "method_refs": [
+          "M1",
+          "M2"
+        ],
+        "evidence_refs": [
+          "E1",
+          "E2"
+        ],
+        "mechanism_hypotheses": [
+          {
+            "hypothesis": "M1's graph smoothing advantage is MAR-specific",
+            "supporting_evidence_refs": [
+              "E1",
+              "E2"
+            ],
+            "alternative_explanations": [
+              "sample composition differs"
+            ]
+          }
+        ],
+        "predictions": [
+          "fixture prediction"
+        ],
+        "discriminating_experiment": "Run both methods on the SAME matrix under the interpolated regime; the outcome pattern uniquely identifies which mechanism holds.",
+        "falsification_criteria": [
+          "ordering stable across the full interpolation range"
+        ],
+        "impact_if_true": "method guidance changes",
+        "impact_if_false": "artifact of composition",
+        "novelty_status": "possible_overlap",
+        "nearest_related_work": [
+          "fixture related work"
+        ],
+        "confidence_rationale": "fixture"
+      }
+    ],
+    "result_status": "qualified_tensions_found",
+    "limitations": [
+      "two methods only"
+    ]
+  },
+  "provenance_hash": "89aa6d97b350"
+}

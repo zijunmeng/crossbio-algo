@@ -1,6 +1,20 @@
-# crossbio-algo — 项目总结 (v0.3.0)
+# crossbio-algo — 项目总结 (v0.4.0)
 
-## v0.3.0（当前）—— skill-effectiveness benchmark(从 framework 跨向 methodology)
+## v0.4.0（当前）—— Method Tension Miner：方法学张力发现与可证伪假设生成
+
+补上 v0.3.x 闭环一直没有独立定义的能力：**从可追溯的文献证据中发现方法学张力，并把张力转化为能被实验区分的竞争性假设**。SPEC 见 `docs/specs/2026-10-19-method-tension-miner.md`。
+
+| 交付 | 内容 |
+|---|---|
+| **第 8 个 skill** | `method-tension-miner`：7 类张力分类 + 证据状态三分（observed / literature_inferred / unverified）+ 可证伪性要件（预测/判别实验/否证标准/双向影响）+ 新颖性四值枚举（**无 first/novel 值**，validator 与 agent 都不能宣称首创）+ `no_qualified_tension` 合法输出（强制检索记录，P5 反凑数） |
+| **机器契约** | schema 新增 `method-tension` stage；validator 新增 3 组规则（内容规则 8→11：引用完整性 / 状态诚实性 / 血统追溯）；状态机三档策略（Publication 必跑且挡 brainstorm；Quick 预记录跳过；Standard `--tension required` 给发现型任务）；新增 **BLOCKED** 状态 + `block-stage`（不能跑 ≠ 静默跳过）；v0.3.2 旧链/旧 manifest 完全兼容 |
+| **闭环集成** | brainstorm 记录 idea 来源与 tension_ids；viability 把张力近似工作作为竞品检索起点；design 对张力来源 idea 强制 6 个承重字段（含 kill_criteria，接复杂度淘汰开关）；audit 新增 methodological-skeptic 席位；spec 阶段假设永不改写成确定结论 |
+| **测试与 fixture** | 95 tests（含 schema 拒绝 first_ever 枚举、间接证据冒充 observed、无检索记录的 no_tension 等负例）；4 个 fixture：真矛盾 / estimand 假矛盾（诚实标注）/ 纯证据空白 / **负结果端到端链**（假设被判别实验否定 → documented_limitation + kill 执行，链仍 VALID） |
+| **诚实边界** | A/B/C 效能基准（Qualified Hypothesis Yield + 盲评）**已设计未运行**——v0.4.0 不声称提升假设质量，只声称纪律已定义、机器可查、效果可测量。Validator-PASS ≠ 科学正确（P6） |
+
+---
+
+## v0.3.0 —— skill-effectiveness benchmark(从 framework 跨向 methodology)
 
 六轮 hardening 把 evidence chain 做到 SOURCE-BOUND ATTESTED 后,v0.3 回答评审的核心大问题:**这 7 个 skill 真的让 AI 设计的生信算法更科学吗(更少 estimand/泄漏/benchmark/假创新/不必要复杂度错误),而不只是 chain 更整齐?**
 

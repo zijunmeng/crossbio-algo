@@ -1,6 +1,6 @@
 # crossbio-algo 触发指南
 
-> 本文档说明 7 个 skill 如何自动触发、触发链的顺序、以及手动触发方式。
+> 本文档说明 8 个 skill 如何自动触发、触发链的顺序、以及手动触发方式。
 
 ---
 
@@ -13,7 +13,7 @@ Claude Code 在每条用户消息后扫描所有已装 skill 的 YAML frontmatte
 
 ---
 
-## 触发链(7 个 skill)
+## 触发链(8 个 skill)
 
 ### 总览
 
@@ -25,13 +25,16 @@ using-crossbio-algo (bootstrap, 最高优先)
 data-and-estimand-audit ✋GATE (所有模式都跑, 不可跳过)
       ↓ (fatal_issues 非空 → 停, 等用户决定)
       ↓
-brainstorm (可选: 用户要多个候选时)
+method-tension-miner (v0.4.0, 按模式: Publication 必跑 / Standard 发现型任务跑 /
+      Quick 默认跳过-有记录; 找不到合格张力 → 诚实输出 NO_QUALIFIED_TENSION)
+      ↓
+brainstorm (可选: 用户要多个候选时; 张力卡片是一种输入, 不是唯一输入)
       ↓
 topic-viability-assessment (评分: 5 类竞品 + 8 维 + plausible range)
       ↓
-    ★ adversarial-panel-audit (信任前必审)
+    ★ adversarial-panel-audit (信任前必审; 张力类 artifact 强制 methodological-skeptic 席位)
       ↓
-algorithm-design (16 字段 formal method contract)
+algorithm-design (16 字段 formal method contract; 张力来源的 idea 加 6 个承重字段)
       ↓
     ★ adversarial-panel-audit
       ↓
@@ -52,6 +55,7 @@ code
 |---|---|---|
 | **using-crossbio-algo** | 用户提出研究方向 / 算法 / 工具 / 方法 | "我想做谱系示踪算法" |
 | **data-and-estimand-audit** | 有数据 + 研究问题, 在 brainstorm/design 之前 | (由 bootstrap 自动触发, 无需手动) |
+| **method-tension-miner** | 找新方向 / 创新点 / 方法学矛盾 / 发现型任务 (Publication 必跑) | "这个领域还有什么可做的" / "帮我挖方法学矛盾" / "找新方向" |
 | **brainstorm** | 想要多个候选方向 / 找课题 | "这几个方向哪个值得做" / "帮我找课题" |
 | **topic-viability-assessment** | 提出一个具体方向, 问值不值得 | "这个 idea 会不会太挤" / "有什么竞品" |
 | **algorithm-design** | 要设计新算法 / 新方法 / 新模型 | "帮我设计一个 X 算法" / "现有方法都不行" |
@@ -64,9 +68,9 @@ code
 
 | 模式 | 跑什么 | 跳什么 | 适用场景 |
 |---|---|---|---|
-| **Quick** (~30 min) | data-audit → design-lite(4 字段) → tests | brainstorm / viability / full spec / audit | "这 idea 能不能建?" T3/T4 |
-| **Standard** (~半天) | data-audit → viability → full design → spec → 1 audit | brainstorm | T2 工具论文(默认) |
-| **Publication** (~多天) | full loop: brainstorm → viability → multi-audit → design → spec → benchmark → roadmap | 无 | T1 顶刊 / 完整发表 |
+| **Quick** (~30 min) | data-audit → design-lite(4 字段) → tests | method-tension(预记录跳过, `--tension` 可开) / brainstorm / viability / full spec / audit | "这 idea 能不能建?" T3/T4 |
+| **Standard** (~半天) | data-audit → [tension: 发现型任务跑] → viability → full design → spec → 1 audit | brainstorm | T2 工具论文(默认) |
+| **Publication** (~多天) | full loop: **tension(必跑)** → brainstorm → viability → multi-audit → design → spec → benchmark → roadmap | 无 | T1 顶刊 / 完整发表 |
 
 **选择方式**: 用户显式选("快速检查" → Quick,"这是正经论文" → Standard/Publication),或自动从 target tier 推断(T3/T4→Quick, T2→Standard, T1→Publication)。用户随时可覆盖。
 

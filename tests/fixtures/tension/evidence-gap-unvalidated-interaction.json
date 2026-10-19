@@ -1,0 +1,148 @@
+{
+  "artifact_id": "mt-fixture-gap",
+  "stage": "method-tension",
+  "parent_artifact_id": "da-fixture",
+  "skill_version": "0.4.0",
+  "stage_fields": {
+    "scope": {
+      "research_question": "which imputation method to trust in sparse 10x data",
+      "data_regime": [
+        "10x v3",
+        "sparse"
+      ],
+      "target_tier": "T2",
+      "literature_cutoff_date": "2026-10-01"
+    },
+    "search_protocol": {
+      "sources": [
+        "PubMed",
+        "bioRxiv"
+      ],
+      "queries": [
+        "scRNA imputation benchmark",
+        "imputation MNAR"
+      ],
+      "searched_at": "2026-10-19",
+      "coverage_limitations": [
+        "English only"
+      ]
+    },
+    "method_cards": [
+      {
+        "method_id": "M1",
+        "name": "Method M1",
+        "estimand": "true count",
+        "analysis_unit": "cell",
+        "assumptions": [
+          "MAR"
+        ],
+        "validated_regimes": [
+          "10x v3"
+        ],
+        "reported_limitations": [
+          "fixture"
+        ],
+        "evidence_refs": [
+          "E1"
+        ]
+      },
+      {
+        "method_id": "M2",
+        "name": "Method M2",
+        "estimand": "true count",
+        "analysis_unit": "cell",
+        "assumptions": [
+          "batch-independent"
+        ],
+        "validated_regimes": [
+          "10x v3"
+        ],
+        "reported_limitations": [
+          "fixture"
+        ],
+        "evidence_refs": [
+          "E2"
+        ]
+      }
+    ],
+    "evidence_items": [
+      {
+        "evidence_id": "E1",
+        "source_type": "primary_paper",
+        "title": "M1 studied under sparse-only regime",
+        "year": 2025,
+        "doi_or_url": "https://example.org/doi/E1",
+        "locator": "Table 1",
+        "claim_supported": "M1 validated on sparse 10x without batch structure",
+        "evidence_strength": "direct",
+        "notes": "fixture"
+      },
+      {
+        "evidence_id": "E2",
+        "source_type": "primary_paper",
+        "title": "M2 studied under batched regime only",
+        "year": 2025,
+        "doi_or_url": "https://example.org/doi/E2",
+        "locator": "Table 1",
+        "claim_supported": "M2 validated with batch structure at moderate depth",
+        "evidence_strength": "direct",
+        "notes": "fixture"
+      }
+    ],
+    "tensions": [
+      {
+        "tension_id": "TENS-003",
+        "type": "unvalidated_interaction",
+        "evidence_status": "literature_inferred",
+        "claim": "sparse-depth and batch-structure conditions are each studied separately; their interaction is untested for both methods",
+        "method_refs": [
+          "M1",
+          "M2"
+        ],
+        "evidence_refs": [
+          "E1",
+          "E2"
+        ],
+        "mechanism_hypotheses": [
+          {
+            "hypothesis": "sparsity amplifies batch-correlated genes differently than housekeeping genes, so joint-regime behavior is not predicted by either single-condition study",
+            "supporting_evidence_refs": [
+              "E1",
+              "E2"
+            ],
+            "alternative_explanations": [
+              "sample composition differs"
+            ]
+          }
+        ],
+        "predictions": [
+          "fixture prediction"
+        ],
+        "discriminating_experiment": "Run both methods on the SAME matrix under the interpolated regime; the outcome pattern uniquely identifies which mechanism holds.",
+        "falsification_criteria": [
+          "ordering stable across the full interpolation range"
+        ],
+        "impact_if_true": "method guidance changes",
+        "impact_if_false": "artifact of composition",
+        "novelty_status": "possible_overlap",
+        "nearest_related_work": [
+          "fixture related work"
+        ],
+        "confidence_rationale": "fixture",
+        "condition_evidence": {
+          "sparse-no-batch": [
+            "E1"
+          ],
+          "batched-moderate-depth": [
+            "E2"
+          ]
+        }
+      }
+    ],
+    "result_status": "qualified_tensions_found",
+    "limitations": [
+      "joint regime absent from all searched benchmarks"
+    ]
+  },
+  "provenance_hash": "e4df3852d956"
+}

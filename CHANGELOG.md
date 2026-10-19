@@ -2,6 +2,72 @@
 
 All notable changes to **crossbio-algo**. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-10-19 — Method Tension Miner (falsifiable hypotheses from literature tension)
+
+Adds the one capability the v0.3.x loop enforced everything AROUND but never defined: **mining
+methodological tensions from traceable literature evidence and converting them into competing
+hypotheses an experiment can distinguish**. Spec: `docs/specs/2026-10-19-method-tension-miner.md`.
+
+### New skill: `method-tension-miner` (8th skill)
+- 7-type tension taxonomy (`empirical_contradiction` / `assumption_conflict` /
+  `unvalidated_interaction` / `information_loss` / `estimand_mismatch` /
+  `identifiability_boundary` / `benchmark_blind_spot`), each with not-to-be-confused-with guards.
+- Evidence-status honesty (P3): `observed` (directly reported — requires ≥1 DIRECT evidence ref)
+  vs `literature_inferred` (cross-paper synthesis — derivation chain written out) vs
+  `unverified`. "Never compared" can never be labeled a contradiction (AC-03).
+- Falsifiability is operational (P4): every qualified tension carries predictions + a
+  discriminating experiment + falsification criteria + impact both ways.
+- Novelty status has NO "first/novel" value — the enum cannot express primacy, the validator
+  cannot certify it, and neither may the agent (FR-07). `not_found_in_scoped_search` requires
+  the scoped search record.
+- `no_qualified_tension` is a VALID outcome with a mandatory search record (P5, AC-04) —
+  no forced novelty, no filler.
+
+### Machine contract (schema + validator + state machine)
+- `method-tension` stage in `stage-schemas.json` (scope / search_protocol / method_cards /
+  evidence_items with locators / tensions / result_status) under the existing envelope.
+- 3 new validator rule families (content rules 8 → 11): `tension-refs` (dangling evidence/
+  method/hypothesis references, AC-01), `tension-status` (facts-vs-inference honesty, per-type
+  payload, honest no-tension, blocked-reason), `tension-lineage` (brainstorm/design tension_ids
+  resolve; tension-derived designs carry the six load-bearing fields: tension_resolution /
+  competing_explanations / discriminating_predictions / minimum_discriminating_experiment /
+  kill_criteria / incremental_vs_structural_claim — AC-06).
+- State machine: `method_tension` stage in all three mode DAGs — REQUIRED and gating brainstorm
+  in Publication (spec §5.2 flow hard-enforced), optional parallel branch in Quick/Standard
+  (v0.3.2 flows bit-for-bit unchanged); `init-run --tension {auto,required,optional,skipped}`
+  (Quick default = pre-RECORDED skip, zero added cost; Standard discovery-type runs use
+  `--tension required`); new **BLOCKED** status + `crossbio block-stage` — cannot-run is
+  recorded explicitly and fails finalize for required stages (never a silent skip, §5.3/§9.2).
+- Backward compatibility: v0.3.2 artifact chains and run-manifests validate/behavior identically
+  (presence-filtered DAG; absence of a method-tension artifact is not an error) — AC-05.
+
+### Integration (the tension chain carries)
+- brainstorm: tension cards are an R2 input (never the only input); candidates record
+  `source` + resolvable `tension_ids`.
+- topic-viability: tension `nearest_related_work` = competitor search STARTING point; explicit
+  same-question/estimand/mechanism/component classification; collisions → fallback, not rename.
+- algorithm-design: six tension-resolution fields for tension-derived designs; kill criteria
+  feed the existing complexity kill-switch (AC-07 — "theoretically innovative" is no exemption).
+- adversarial-panel-audit: 7th role `methodological-skeptic`, mandatory for tension artifacts.
+- spec-writing: hypotheses/predictions/kill-criteria flow into acceptance criteria or stay
+  explicitly labeled unverified — a hypothesis never becomes a confident conclusion in a spec.
+
+### Tests & fixtures
+- 95 tests total (84 in tests/ + 11 scout): 19 tension rule tests (incl. schema-rejects-
+  "first_ever" enum), 14 process tests (policy defaults, publication gate, blocked
+  fail/recover, v0.3.2 manifest compat), 10 fixture tests.
+- 4 fixtures (`tests/fixtures/tension/`): real contradiction; fake contradiction (estimand
+  mismatch honestly labeled); pure evidence gap; **negative-result chain** — the tension-derived
+  hypothesis is REFUTED by the discriminating experiment, honestly recorded (AC =
+  documented_limitation, kill executed via component_necessity) and the chain still validates.
+
+### NOT claimed (honesty boundary, spec §11.7 / DoD)
+- The A/B/C effectiveness benchmark (Qualified Hypothesis Yield, blinded grading) is DESIGNED
+  (`benchmarks/`) but NOT RUN — v0.4.0 does not claim the module improves hypothesis quality,
+  only that the discipline is now defined, machine-checked, and measurable.
+- Validator-PASS certifies structure and traceability — never that papers were read correctly,
+  tensions are real, or anything is novel (P6).
+
 ## [0.3.2] — 2026-08-16 — Paradigm Divergence (break out of existing-paper framing)
 
 The agent's first abstraction is anchored to the field's dominant paradigm. v0.3.2 forces a
