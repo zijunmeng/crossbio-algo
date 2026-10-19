@@ -17,11 +17,12 @@
     "assumptions": {"type": "array", "items": {"type": "string"}},
     "evidence": {"type": "array", "items": {"type": "string"}},
     "unresolved_risks": {"type": "array", "items": {"type": "string"}},
-    "stage": {"enum": ["data-audit", "brainstorm", "viability", "design", "spec", "code", "audit"]}
+    "stage": {"enum": ["data-audit", "method-tension", "brainstorm", "viability", "design", "spec", "code", "audit"]}
   },
   "additionalProperties": true,
   "oneOf": [
     {"properties": {"stage": {"const": "data-audit"}, "stage_fields": {"$ref": "#/$defs/data_audit_fields"}}, "required": ["stage", "stage_fields"]},
+    {"properties": {"stage": {"const": "method-tension"}, "stage_fields": {"$ref": "#/$defs/method_tension_fields"}}, "required": ["stage", "stage_fields"]},
     {"properties": {"stage": {"const": "brainstorm"}, "stage_fields": {"$ref": "#/$defs/brainstorm_fields"}}, "required": ["stage", "stage_fields"]},
     {"properties": {"stage": {"const": "viability"}, "stage_fields": {"$ref": "#/$defs/viability_fields"}}, "required": ["stage", "stage_fields"]},
     {"properties": {"stage": {"const": "design"}, "stage_fields": {"$ref": "#/$defs/design_fields"}}, "required": ["stage", "stage_fields"]},
@@ -41,6 +42,105 @@
         "cohort_structure": {"type": "string"},
         "leakage_graph": {"type": "string"},
         "split_strategy": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "method_tension_fields": {
+      "description": "Method tension miner (v0.4.0): evidence-traceable methodological tensions + falsifiable competing hypotheses. NO_QUALIFIED_TENSION is a VALID outcome (P5: no forced novelty). The validator checks structure and traceability — NOT scientific truth or novelty (P6). Evidence_status/novelty_status enums deliberately contain NO 'first/novel' value (rule: validator never upgrades novelty claims).",
+      "type": "object",
+      "required": ["scope", "search_protocol", "method_cards", "evidence_items", "tensions", "result_status", "limitations"],
+      "properties": {
+        "scope": {
+          "type": "object",
+          "required": ["research_question", "data_regime", "target_tier", "literature_cutoff_date"],
+          "properties": {
+            "research_question": {"type": "string"},
+            "data_regime": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+            "target_tier": {"type": "string", "enum": ["T1", "T2", "T3", "T4"]},
+            "literature_cutoff_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}
+          },
+          "additionalProperties": true
+        },
+        "search_protocol": {
+          "type": "object",
+          "required": ["sources", "queries", "searched_at", "coverage_limitations"],
+          "properties": {
+            "sources": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+            "queries": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+            "searched_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+            "coverage_limitations": {"type": "array", "items": {"type": "string"}}
+          },
+          "additionalProperties": true
+        },
+        "method_cards": {
+          "type": "array", "minItems": 1,
+          "items": {"type": "object",
+            "required": ["method_id", "name", "estimand", "analysis_unit", "assumptions", "validated_regimes", "reported_limitations", "evidence_refs"],
+            "properties": {
+              "method_id": {"type": "string"},
+              "name": {"type": "string"},
+              "estimand": {"type": "string"},
+              "analysis_unit": {"type": "string"},
+              "assumptions": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+              "validated_regimes": {"type": "array", "items": {"type": "string"}},
+              "reported_limitations": {"type": "array", "items": {"type": "string"}},
+              "evidence_refs": {"type": "array", "items": {"type": "string"}}
+            },
+            "additionalProperties": true}
+        },
+        "evidence_items": {
+          "type": "array", "minItems": 1,
+          "items": {"type": "object",
+            "required": ["evidence_id", "source_type", "title", "year", "doi_or_url", "locator", "claim_supported", "evidence_strength"],
+            "properties": {
+              "evidence_id": {"type": "string"},
+              "source_type": {"type": "string", "enum": ["primary_paper", "review", "supplement", "code", "benchmark"]},
+              "title": {"type": "string"},
+              "year": {"type": "integer", "minimum": 1900, "maximum": 2100},
+              "doi_or_url": {"type": "string"},
+              "locator": {"type": "string", "description": "section / table / figure / code path — where in the source the claim lives"},
+              "claim_supported": {"type": "string"},
+              "evidence_strength": {"type": "string", "enum": ["direct", "indirect"]},
+              "notes": {"type": "string"}
+            },
+            "additionalProperties": true}
+        },
+        "tensions": {
+          "type": "array",
+          "items": {"type": "object",
+            "required": ["tension_id", "type", "evidence_status", "claim", "method_refs", "evidence_refs", "mechanism_hypotheses", "predictions", "discriminating_experiment", "falsification_criteria", "impact_if_true", "impact_if_false", "novelty_status", "confidence_rationale"],
+            "properties": {
+              "tension_id": {"type": "string", "pattern": "^TENS-[0-9]{3,}$"},
+              "type": {"type": "string", "enum": ["empirical_contradiction", "assumption_conflict", "unvalidated_interaction", "information_loss", "estimand_mismatch", "identifiability_boundary", "benchmark_blind_spot"]},
+              "evidence_status": {"type": "string", "enum": ["observed", "literature_inferred", "unverified"]},
+              "claim": {"type": "string"},
+              "method_refs": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+              "evidence_refs": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+              "mechanism_hypotheses": {"type": "array", "minItems": 1,
+                "items": {"type": "object",
+                  "required": ["hypothesis", "supporting_evidence_refs", "alternative_explanations"],
+                  "properties": {
+                    "hypothesis": {"type": "string"},
+                    "supporting_evidence_refs": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                    "alternative_explanations": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+                  },
+                  "additionalProperties": true}},
+              "predictions": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+              "discriminating_experiment": {"type": "string", "minLength": 20, "description": "'validate on more data' / 'compare algorithms' are NOT discriminating experiments — state which result supports which competing explanation"},
+              "falsification_criteria": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+              "impact_if_true": {"type": "string"},
+              "impact_if_false": {"type": "string"},
+              "novelty_status": {"type": "string", "enum": ["known_related_work", "possible_overlap", "not_found_in_scoped_search", "expert_review_required"]},
+              "nearest_related_work": {"type": "array", "items": {"type": "string"}},
+              "confidence_rationale": {"type": "string"},
+              "conflict_regime": {"type": "array", "items": {"type": "string"}, "description": "REQUIRED (content rule) for type=assumption_conflict — the data regimes where the assumptions clash"},
+              "condition_evidence": {"type": "object", "description": "REQUIRED (content rule) for type=unvalidated_interaction — {condition: [evidence_id, ...]}: what evidence exists for EACH condition separately"}
+            },
+            "additionalProperties": true}
+        },
+        "result_status": {"type": "string", "enum": ["qualified_tensions_found", "no_qualified_tension", "blocked"]},
+        "blocked_reason": {"type": "string", "description": "REQUIRED (content rule) when result_status=blocked — why the mining could not complete"},
+        "limitations": {"type": "array", "items": {"type": "string"}}
       },
       "additionalProperties": true
     },

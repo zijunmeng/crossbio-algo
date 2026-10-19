@@ -161,3 +161,113 @@ def test_publication_mode_requires_brainstorm(tmp_path):
         f"warning should flag required-ness: {warnings!r}")
     assert not any("brainstorm" in m_ for m_ in missing), (
         f"reason-coded skip must NOT be a missing item: {missing!r}")
+
+
+# --- 6. v0.4.0: method_tension policy / blocked / backward compat ------------------------------
+
+def test_quick_mode_tension_pre_skipped_with_reason(tmp_path):
+    """Quick default = tension OFF, but as a RECORDED skip (reason + justification), never silent.
+    The gate must point straight at data_audit (no added default cost)."""
+    m = RunManifest.create(str(tmp_path), mode="quick", target_tier="T3")
+    assert m.stage_status("method_tension") == "skipped"
+    assert m.data["stages"]["method_tension"]["skip_reason_code"] == "NOT_APPLICABLE"
+    assert m.allowed_stage() == "data_audit"
+
+
+def test_quick_mode_tension_can_be_enabled_later(tmp_path):
+    """User explicitly asks for discovery in Quick → complete the stage from 'skipped'."""
+    m = RunManifest.create(str(tmp_path), mode="quick", tension_policy="optional")
+    m.complete_stage("data_audit", artifact_id="aud-1")
+    m.complete_stage("method_tension", artifact_id="mt-1")
+    assert m.stage_status("method_tension") == "completed"
+
+
+def test_standard_default_tension_optional_and_nonblocking(tmp_path):
+    """Standard default: optional, sits as a parallel branch — the classic standard flow is
+    untouched (the v0.3.2 gate semantics are preserved bit-for-bit)."""
+    m = RunManifest.create(str(tmp_path), mode="standard")
+    assert m.stage_status("method_tension") == "pending"
+    assert not m._dag()["method_tension"]["required"]
+    m.complete_stage("data_audit", artifact_id="aud-1")
+    m.complete_stage("evidence_search", artifact_id="evi-1", evidence_manifest="ev/m.json")
+    m.skip_stage("brainstorm", reason_code="USER_DEFINED_SINGLE_DIRECTION",
+                 justification="user has the one idea")
+    assert m.allowed_stage() == "viability"  # NOT method_tension — parallel branch
+
+
+def test_standard_discovery_run_tension_required(tmp_path):
+    m = RunManifest.create(str(tmp_path), mode="standard", tension_policy="required")
+    m.complete_stage("data_audit", artifact_id="aud-1")
+    m.complete_stage("evidence_search", artifact_id="evi-1", evidence_manifest="ev/m.json")
+    m.complete_stage("method_tension", artifact_id="mt-1")
+    # required completion without phantom: with artifact_id → no missing entry
+    status, missing, _ = m.finalize()
+    assert not any("method_tension" in x for x in missing)
+
+
+def test_publication_tension_gates_brainstorm(tmp_path):
+    """Publication: method_tension is required AND brainstorm depends on it — the spec's
+    flow (tension cards feed brainstorm) is hard-enforced."""
+    m = RunManifest.create(str(tmp_path), mode="publication", target_tier="T1")
+    m.complete_stage("data_audit", artifact_id="aud-1")
+    m.complete_stage("evidence_search", artifact_id="evi-1", evidence_manifest="ev/m.json")
+    with pytest.raises(ValueError) as exc:
+        m.complete_stage("brainstorm", artifact_id="br-1")
+    assert "method_tension" in str(exc.value)
+    assert m.allowed_stage() == "method_tension"
+
+
+def test_publication_blocked_tension_fails_finalize(tmp_path):
+    """AC-05: a required stage that CANNOT run is recorded BLOCKED (explicit, never silent)
+    and finalize must refuse READY_FOR_USER."""
+    m = RunManifest.create(str(tmp_path), mode="publication", target_tier="T1")
+    m.complete_stage("data_audit", artifact_id="aud-1")
+    m.complete_stage("evidence_search", artifact_id="evi-1", evidence_manifest="ev/m.json")
+    m.block_stage("method_tension", reason_code="SEARCH_UNAVAILABLE",
+                  justification="literature search API down; cannot mine tensions honestly")
+    assert m.stage_status("method_tension") == "blocked"
+    # gate: brainstorm is blocked behind it
+    with pytest.raises(ValueError):
+        m.complete_stage("brainstorm", artifact_id="br-1")
+    status, missing, warnings = m.finalize()
+    assert status == "PROVISIONAL_NONCOMPLIANT"
+    assert any("method_tension" in x and "BLOCKED" in x for x in missing)
+
+
+def test_blocked_reason_code_validated(tmp_path):
+    m = RunManifest.create(str(tmp_path), mode="publication")
+    with pytest.raises(ValueError):
+        m.block_stage("method_tension", reason_code="JUST_FEEL_LIKE_IT", justification="...")
+
+
+def test_blocked_stage_recoverable_by_completing(tmp_path):
+    m = RunManifest.create(str(tmp_path), mode="publication", target_tier="T1")
+    m.complete_stage("data_audit", artifact_id="aud-1")
+    m.complete_stage("evidence_search", artifact_id="evi-1", evidence_manifest="ev/m.json")
+    m.block_stage("method_tension", reason_code="SEARCH_UNAVAILABLE", justification="api down")
+    # tooling recovers → complete out of blocked
+    m.complete_stage("method_tension", artifact_id="mt-1")
+    assert m.stage_status("method_tension") == "completed"
+    assert m.allowed_stage() == "brainstorm"
+
+
+def test_old_v032_manifest_ignores_new_stage(tmp_path):
+    """AC-05: a v0.3.2 run-manifest (no method_tension key) loaded under v0.4.0 behaves
+    EXACTLY as before — the new stage is filtered out, the gate never points at it."""
+    import json
+    old_manifest = {
+        "run_id": "old-run",
+        "mode": "publication",
+        "target_tier": "T1",
+        "stages": {
+            s: {"required": True, "status": st, "artifact_id": None,
+                "skip_reason_code": None, "skip_justification": None, "evidence_manifest": None}
+            for s, st in [("data_audit", "completed"), ("evidence_search", "completed"),
+                          ("brainstorm", "completed"), ("viability", "pending")]
+        },
+    }
+    p = tmp_path / "run-manifest.json"
+    p.write_text(json.dumps(old_manifest))
+    m = RunManifest.load(str(tmp_path))
+    assert "method_tension" not in m._dag()
+    assert m.allowed_stage() == "viability"

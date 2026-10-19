@@ -23,16 +23,18 @@ import jsonschema
 # The canonical stage schema is bundled INSIDE the package (crossbio_validate/schemas/)
 # so wheels include it. Resolved at runtime via importlib.resources; see load_schema().
 
-STAGES = ["data-audit", "brainstorm", "viability", "design", "spec", "code", "audit"]
+STAGES = ["data-audit", "method-tension", "brainstorm", "viability", "design", "spec", "code", "audit"]
 
 # child_stage -> set of allowed PARENT stages (None = root / no parent).
 # Encodes the loop topology from research-design-handoff.md (data-audit is the
-# GATE root; brainstorm/viability/design can each chain from earlier stages;
-# spec must follow design; code must follow spec; audit is horizontal).
+# GATE root; method-tension sits between the audit and brainstorm; brainstorm/
+# viability/design can each chain from earlier stages; spec must follow design;
+# code must follow spec; audit is horizontal).
 ALLOWED_PARENT_STAGES = {
     "data-audit": {None},
-    "brainstorm": {"data-audit"},
-    "viability": {"brainstorm", "data-audit"},
+    "method-tension": {"data-audit"},
+    "brainstorm": {"data-audit", "method-tension"},
+    "viability": {"brainstorm", "data-audit", "method-tension"},
     "design": {"viability", "brainstorm", "data-audit"},
     "spec": {"design"},
     "code": {"spec"},
@@ -357,6 +359,194 @@ def rule_component_necessity(arts: list[dict]) -> list[Finding]:
     return out
 
 
+# ---------- method-tension content rules (v0.4.0 — spec §9.3) ----------
+# P6 holds throughout: these rules check STRUCTURE and TRACEABILITY (refs resolve,
+# status labels are consistent, experiment fields exist). They can never prove a
+# paper was read correctly, that a tension is real, or that anything is novel —
+# schema-valid ≠ scientifically true.
+
+def _first_tension_artifact(arts: list[dict]) -> Optional[dict]:
+    return next((a for a in arts if a.get("stage") == "method-tension"), None)
+
+
+def rule_tension_ref_integrity(arts: list[dict]) -> list[Finding]:
+    """Spec §9.3 rules 1-2: every evidence_ref resolves to a declared evidence_item;
+    every method_ref resolves to a declared method_card (no dangling references — AC-01)."""
+    mt = _first_tension_artifact(arts)
+    if not mt:
+        return []
+    sf = mt.get("stage_fields") or {}
+    ev_ids = {e.get("evidence_id") for e in sf.get("evidence_items") or [] if isinstance(e, dict)}
+    m_ids = {m.get("method_id") for m in sf.get("method_cards") or [] if isinstance(m, dict)}
+    out: list[Finding] = []
+
+    def _check_refs(where: str, refs, owner: str):
+        for r in refs or []:
+            if r not in ev_ids:
+                out.append(Finding("tension-refs", "ERROR",
+                    f"{owner}: {where} references evidence_id {r!r} not declared in evidence_items"
+                    f" (dangling reference — AC-01 violated)", mt.get("artifact_id")))
+
+    for m in sf.get("method_cards") or []:
+        if isinstance(m, dict):
+            _check_refs("method_card.evidence_refs", m.get("evidence_refs"), f"method_card {m.get('method_id')!r}")
+    for t in sf.get("tensions") or []:
+        if not isinstance(t, dict):
+            continue
+        tid = t.get("tension_id")
+        _check_refs("evidence_refs", t.get("evidence_refs"), f"tension {tid!r}")
+        for mr in t.get("method_refs") or []:
+            if mr not in m_ids:
+                out.append(Finding("tension-refs", "ERROR",
+                    f"tension {tid!r}: method_ref {mr!r} not declared in method_cards", mt.get("artifact_id")))
+        for mh in t.get("mechanism_hypotheses") or []:
+            if isinstance(mh, dict):
+                _check_refs("mechanism_hypothesis.supporting_evidence_refs",
+                            mh.get("supporting_evidence_refs"), f"tension {tid!r} mechanism_hypothesis")
+        # unvalidated_interaction: condition_evidence values must also resolve (spec §9.3 rule 5)
+        if t.get("type") == "unvalidated_interaction" and isinstance(t.get("condition_evidence"), dict):
+            for cond, refs in t["condition_evidence"].items():
+                _check_refs(f"condition_evidence[{cond!r}]", refs if isinstance(refs, list) else [refs],
+                            f"tension {tid!r}")
+    return out
+
+
+def rule_tension_status_logic(arts: list[dict]) -> list[Finding]:
+    """Spec §9.3 rules 3-9: evidence-status honesty (facts vs inference vs gap) and result_status
+    coherence. The load-bearing honesty rules:
+    - empirical_contradiction / observed must be backed by DIRECT evidence — indirect-only means the
+      tension is literature_inferred, not observed (AC-02, AC-03);
+    - no_qualified_tension must have empty tensions AND a real search record (AC-04, rule 8);
+    - blocked must say why;
+    - novelty can NEVER be upgraded by the validator (rule 9 — enum only; no 'first/novel' value)."""
+    mt = _first_tension_artifact(arts)
+    if not mt:
+        return []
+    sf = mt.get("stage_fields") or {}
+    out: list[Finding] = []
+    aid = mt.get("artifact_id")
+    strengths = {e.get("evidence_id"): e.get("evidence_strength")
+                 for e in sf.get("evidence_items") or [] if isinstance(e, dict)}
+    tensions = sf.get("tensions") or []
+    rs = sf.get("result_status")
+
+    for t in tensions:
+        if not isinstance(t, dict):
+            continue
+        tid = t.get("tension_id")
+        refs = t.get("evidence_refs") or []
+        strengths_of = [strengths.get(r) for r in refs]
+        if t.get("type") == "empirical_contradiction":
+            indirect = [r for r in refs if strengths.get(r) == "indirect"]
+            if indirect:
+                out.append(Finding("tension-status", "ERROR",
+                    f"tension {tid!r} type=empirical_contradiction but evidence {indirect} is INDIRECT —"
+                    f" a contradiction nobody directly reported is literature_inferred, not observed"
+                    f" (relabel: type or evidence_status)", aid))
+        if t.get("evidence_status") == "observed":
+            if not any(s == "direct" for s in strengths_of):
+                out.append(Finding("tension-status", "ERROR",
+                    f"tension {tid!r} evidence_status=observed but no referenced evidence is DIRECT —"
+                    f" cross-paper inference must be literature_inferred (AC-02)", aid))
+        if t.get("type") == "assumption_conflict":
+            if len(t.get("method_refs") or []) < 2:
+                out.append(Finding("tension-status", "ERROR",
+                    f"tension {tid!r} type=assumption_conflict needs >=2 method_refs"
+                    f" (both sides of the conflict — spec §9.3 rule 4)", aid))
+            if not (t.get("conflict_regime") or []):
+                out.append(Finding("tension-status", "ERROR",
+                    f"tension {tid!r} type=assumption_conflict must state conflict_regime —"
+                    f" the data regimes where the assumptions clash (spec §9.3 rule 4)", aid))
+        if t.get("type") == "unvalidated_interaction":
+            ce = t.get("condition_evidence")
+            if not isinstance(ce, dict) or len(ce) < 2:
+                out.append(Finding("tension-status", "ERROR",
+                    f"tension {tid!r} type=unvalidated_interaction must record condition_evidence for"
+                    f" >=2 separately-studied conditions (spec §9.3 rule 5)", aid))
+        if t.get("novelty_status") == "not_found_in_scoped_search":
+            cov = (sf.get("search_protocol") or {}).get("coverage_limitations") or []
+            if not cov:
+                out.append(Finding("tension-status", "ERROR",
+                    f"tension {tid!r} novelty_status=not_found_in_scoped_search but the artifact records"
+                    f" no coverage_limitations — 'not found' without a scoped search record is"
+                    f" an overclaim (spec §9.3 rule 7)", aid))
+
+    if rs == "qualified_tensions_found" and not tensions:
+        out.append(Finding("tension-status", "ERROR",
+            "result_status=qualified_tensions_found but tensions is empty — that is"
+            " no_qualified_tension (P5: honesty about absence)", aid))
+    if rs == "no_qualified_tension":
+        if tensions:
+            out.append(Finding("tension-status", "ERROR",
+                f"result_status=no_qualified_tension but {len(tensions)} tension(s) present —"
+                f" contradictory artifact", aid))
+        if not ((sf.get("search_protocol") or {}).get("coverage_limitations") or []):
+            out.append(Finding("tension-status", "ERROR",
+                "result_status=no_qualified_tension without search coverage_limitations —"
+                " 'no tension found' must be distinguishable from 'did not really search' (AC-04)", aid))
+        if not (sf.get("limitations") or []):
+            out.append(Finding("tension-status", "ERROR",
+                "result_status=no_qualified_tension must state limitations of the search (AC-04)", aid))
+    if rs == "blocked" and not sf.get("blocked_reason"):
+        out.append(Finding("tension-status", "ERROR",
+            "result_status=blocked requires blocked_reason — why the mining could not complete"
+            " (explicit block, never silent)", aid))
+    return out
+
+
+# tension-derived design payload fields that MUST exist when design.tension_ids is
+# non-empty (spec §8.3 — these are load-bearing, not prose; they must survive to
+# spec/acceptance, so their absence at design time is a structural break, AC-06).
+TENSION_DESIGN_FIELDS = [
+    "tension_resolution",
+    "competing_explanations",
+    "discriminating_predictions",
+    "minimum_discriminating_experiment",
+    "kill_criteria",
+    "incremental_vs_structural_claim",
+]
+
+
+def rule_tension_lineage(arts: list[dict]) -> list[Finding]:
+    """Spec §9.3 rule 10 + §8.3: tension_ids referenced by brainstorm candidates or design MUST
+    resolve to a tension declared in a method-tension artifact in the chain; a tension-derived
+    design MUST carry the six tension-resolution fields (they trace forward to acceptance)."""
+    out: list[Finding] = []
+    mt = _first_tension_artifact(arts)
+    valid_ids: set = set()
+    if mt:
+        valid_ids = {t.get("tension_id") for t in (mt.get("stage_fields") or {}).get("tensions") or []
+                     if isinstance(t, dict) and t.get("tension_id")}
+    for a in arts:
+        st = a.get("stage")
+        if st == "brainstorm":
+            for c in (a.get("stage_fields") or {}).get("candidates") or []:
+                if not isinstance(c, dict):
+                    continue
+                for tid in c.get("tension_ids") or []:
+                    if tid not in valid_ids:
+                        out.append(Finding("tension-lineage", "ERROR",
+                            f"brainstorm candidate {c.get('title')!r} claims origin tension_id {tid!r}"
+                            f" which no method-tension artifact declares — ideas cannot cite"
+                            f" non-existent tensions (spec §9.3 rule 10)", a.get("artifact_id")))
+        elif st == "design":
+            sf = a.get("stage_fields") or {}
+            tids = sf.get("tension_ids") or []
+            for tid in tids:
+                if tid not in valid_ids:
+                    out.append(Finding("tension-lineage", "ERROR",
+                        f"design.tension_ids references {tid!r} which no method-tension artifact"
+                        f" declares (spec §9.3 rule 10)", a.get("artifact_id")))
+            if tids:
+                missing = [f for f in TENSION_DESIGN_FIELDS if not sf.get(f)]
+                if missing:
+                    out.append(Finding("tension-lineage", "ERROR",
+                        f"tension-derived design (tension_ids={tids}) is missing load-bearing fields"
+                        f" {missing} — these trace forward to acceptance criteria; they cannot live"
+                        f" only in the brainstorm doc (spec §8.3, AC-06)", a.get("artifact_id")))
+    return out
+
+
 def validate_chain(arts: list[dict], root: str = ".") -> list[Finding]:
     schema = load_schema()
     out: list[Finding] = []
@@ -375,6 +565,9 @@ def validate_chain(arts: list[dict], root: str = ".") -> list[Finding]:
     out += rule_source_attestation(arts, results, root)
     out += rule_verification_mode_status(arts)
     out += rule_component_necessity(arts)
+    out += rule_tension_ref_integrity(arts)
+    out += rule_tension_status_logic(arts)
+    out += rule_tension_lineage(arts)
     return out
 
 

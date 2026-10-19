@@ -18,6 +18,11 @@ import os
 from typing import Optional
 
 # Per-mode predecessor DAGs. Each stage lists predecessors that must be COMPLETED or SKIPPED.
+# v0.4.0: `method_tension` added. Placement is mode-specific BY DESIGN:
+#   - publication: sits BETWEEN evidence_search and brainstorm (brainstorm depends on it) —
+#     the spec's flow (tension cards feed brainstorm) is hard-enforced where it is required;
+#   - quick/standard: appended at the END as a parallel branch — it gates nothing, so the
+#     existing flows (and v0.3.2 run-manifests, via _dag's presence filter) are untouched.
 STAGE_DAGS = {
     "quick": {
         "data_audit":        {"required": True,  "predecessors": []},
@@ -26,6 +31,7 @@ STAGE_DAGS = {
         "algorithm_design":  {"required": True,  "predecessors": ["data_audit"]},
         "specification":     {"required": False, "predecessors": ["algorithm_design"]},
         "adversarial_audit": {"required": False, "predecessors": ["algorithm_design"]},
+        "method_tension":    {"required": False, "predecessors": ["data_audit"]},
     },
     "standard": {
         "data_audit":        {"required": True,  "predecessors": []},
@@ -35,11 +41,13 @@ STAGE_DAGS = {
         "algorithm_design":  {"required": True,  "predecessors": ["viability"]},
         "specification":     {"required": True,  "predecessors": ["algorithm_design"]},
         "adversarial_audit": {"required": True,  "predecessors": ["specification"]},
+        "method_tension":    {"required": False, "predecessors": ["evidence_search"]},
     },
     "publication": {
         "data_audit":        {"required": True,  "predecessors": []},
         "evidence_search":   {"required": True,  "predecessors": ["data_audit"]},
-        "brainstorm":        {"required": True,  "predecessors": ["evidence_search"]},
+        "method_tension":    {"required": True,  "predecessors": ["evidence_search"]},
+        "brainstorm":        {"required": True,  "predecessors": ["method_tension"]},
         "viability":         {"required": True,  "predecessors": ["brainstorm"]},
         "adversarial_audit": {"required": True,  "predecessors": ["viability"]},
         "algorithm_design":  {"required": True,  "predecessors": ["adversarial_audit"]},
@@ -57,6 +65,20 @@ VALID_SKIP_REASONS = {
     "SKIPPED_BY_USER",
 }
 
+VALID_BLOCK_REASONS = {
+    "SEARCH_UNAVAILABLE",
+    "DATA_UNAVAILABLE",
+    "DEPENDENCY_FAILED",
+    "TIME_CONSTRAINT",
+    "EXTERNAL_BLOCKER",
+}
+
+# default tension policy per mode when init-run --tension=auto (spec §5.3):
+#   quick → skipped at init (recorded, zero default cost, re-enable by completing the stage)
+#   standard → optional (run when the task is discovery-oriented; else explicit skip)
+#   publication → required
+TENSION_POLICY_DEFAULTS = {"quick": "skipped", "standard": "optional", "publication": "required"}
+
 
 class RunManifest:
     """A run-manifest.json tracking the process state of a research task."""
@@ -67,8 +89,13 @@ class RunManifest:
 
     # ---- construction ----
     @classmethod
-    def create(cls, run_dir: str, mode: str = "standard", target_tier: str = "T2") -> "RunManifest":
+    def create(cls, run_dir: str, mode: str = "standard", target_tier: str = "T2",
+               tension_policy: str = "auto") -> "RunManifest":
         dag = STAGE_DAGS.get(mode, STAGE_DAGS["standard"])
+        if tension_policy == "auto":
+            tension_policy = TENSION_POLICY_DEFAULTS.get(mode, "optional")
+        if tension_policy not in ("required", "optional", "skipped"):
+            raise ValueError(f"invalid tension_policy {tension_policy!r}; valid: auto/required/optional/skipped")
         stages = {}
         for stage, config in dag.items():
             stages[stage] = {
@@ -79,10 +106,24 @@ class RunManifest:
                 "skip_justification": None,
                 "evidence_manifest": None,
             }
+        # tension policy: required → required=True; skipped → pre-recorded skip (a RECORDED
+        # default, never a silent one — quick mode's "默认跳过, 必须写明 skip reason").
+        if "method_tension" in stages:
+            if tension_policy == "required":
+                stages["method_tension"]["required"] = True
+            elif tension_policy == "skipped":
+                stages["method_tension"]["required"] = False
+                stages["method_tension"]["status"] = "skipped"
+                stages["method_tension"]["skip_reason_code"] = "NOT_APPLICABLE"
+                stages["method_tension"]["skip_justification"] = (
+                    "mode-default tension policy (v0.4.0): method-tension-miner off for this run; "
+                    "re-enable by completing the stage (crossbio complete-stage method_tension)"
+                )
         data = {
             "run_id": os.path.basename(os.path.abspath(run_dir.rstrip("/"))),
             "mode": mode,
             "target_tier": target_tier,
+            "tension_policy": tension_policy,
             "stages": stages,
         }
         os.makedirs(run_dir, exist_ok=True)
@@ -105,7 +146,11 @@ class RunManifest:
 
     # ---- queries ----
     def _dag(self):
-        return STAGE_DAGS.get(self.data["mode"], STAGE_DAGS["standard"])
+        dag = STAGE_DAGS.get(self.data["mode"], STAGE_DAGS["standard"])
+        # v0.4.0 backward compatibility: a DAG stage ABSENT from this manifest's stages dict
+        # (i.e. a v0.3.2 run-manifest created before method_tension existed) is treated as
+        # not-applicable — old manifests keep behaving exactly as they did under v0.3.2.
+        return {s: cfg for s, cfg in dag.items() if s in self.data["stages"]}
 
     def stage_status(self, stage: str) -> str:
         return self.data["stages"].get(stage, {}).get("status", "pending")
@@ -146,6 +191,23 @@ class RunManifest:
         self.data["stages"][stage]["skip_justification"] = justification
         self.save()
 
+    def block_stage(self, stage: str, reason_code: str, justification: str):
+        """v0.4.0 explicit BLOCKED status (spec §5.3/§9.2): a stage that CANNOT run (e.g. required
+        method_tension with the search tooling down) is recorded as blocked — never silently
+        skipped. A blocked stage is not done: it gates successors and fails finalize (required).
+        Recovery: complete_stage / skip_stage transition out of blocked."""
+        if stage not in self.data["stages"]:
+            raise ValueError(f"unknown stage '{stage}' for mode '{self.data['mode']}'")
+        if reason_code not in VALID_BLOCK_REASONS:
+            raise ValueError(f"invalid reason_code '{reason_code}'; valid: {sorted(VALID_BLOCK_REASONS)}")
+        self.data["stages"][stage]["status"] = "blocked"
+        self.data["stages"][stage]["blocked_reason_code"] = reason_code
+        self.data["stages"][stage]["blocked_justification"] = justification
+        self.save()
+
+    def blocked_stages(self) -> list[str]:
+        return [s for s, st in self.data["stages"].items() if st.get("status") == "blocked"]
+
     # ---- finalization ----
     def finalize(self):
         """Check process compliance. Returns (status_string, missing_list, warnings_list)."""
@@ -156,7 +218,13 @@ class RunManifest:
             status = st.get("status", "pending")
             required = config["required"]
             if required and status not in ("completed", "skipped"):
-                missing.append(f"{stage} (required, status={status})")
+                if status == "blocked":
+                    missing.append(f"{stage} (required, BLOCKED: {st.get('blocked_reason_code')} — "
+                                   f"{st.get('blocked_justification')})")
+                else:
+                    missing.append(f"{stage} (required, status={status})")
+            elif status == "blocked" and not required:
+                warnings.append(f"{stage} blocked (optional) — reason: {st.get('blocked_reason_code')}")
             if status == "skipped" and required:
                 if not st.get("skip_reason_code"):
                     missing.append(f"{stage} (required, skipped without reason_code)")
@@ -167,6 +235,9 @@ class RunManifest:
             # evidence_search must have evidence_manifest
             if stage == "evidence_search" and status == "completed" and not st.get("evidence_manifest"):
                 missing.append(f"{stage} (completed but no evidence_manifest — did you actually search?)")
+            # method_tension: a required tension stage completed without an artifact is a phantom
+            if stage == "method_tension" and status == "completed" and not st.get("artifact_id"):
+                missing.append(f"{stage} (completed but no artifact_id — the tension artifact.json IS the deliverable)")
 
         status = "READY_FOR_USER" if not missing else "PROVISIONAL_NONCOMPLIANT"
         return status, missing, warnings

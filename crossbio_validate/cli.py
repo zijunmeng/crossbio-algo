@@ -18,7 +18,7 @@ import os
 import sys
 
 from . import core
-from .process import RunManifest, VALID_SKIP_REASONS
+from .process import RunManifest, VALID_SKIP_REASONS, VALID_BLOCK_REASONS
 
 
 def _looks_like_artifact(d) -> bool:
@@ -177,6 +177,9 @@ def main(argv=None) -> int:
     ir.add_argument("run_dir")
     ir.add_argument("--mode", default="standard", choices=["quick", "standard", "publication"])
     ir.add_argument("--tier", default="T2")
+    ir.add_argument("--tension", default="auto", choices=["auto", "required", "optional", "skipped"],
+                    help="method-tension-miner policy (v0.4.0). auto: quick→skipped, standard→optional, "
+                         "publication→required. Use 'required' for a discovery-type standard run.")
 
     nx = sub.add_parser("next", help="get the ALLOWED stage (state-machine gate)")
     nx.add_argument("run_dir")
@@ -193,6 +196,12 @@ def main(argv=None) -> int:
     ss.add_argument("--reason", required=True, choices=sorted(VALID_SKIP_REASONS))
     ss.add_argument("--justification", required=True)
 
+    bs = sub.add_parser("block-stage", help="record a stage as BLOCKED (cannot run — never a silent skip)")
+    bs.add_argument("run_dir")
+    bs.add_argument("stage")
+    bs.add_argument("--reason", required=True, choices=sorted(VALID_BLOCK_REASONS))
+    bs.add_argument("--justification", required=True)
+
     fn = sub.add_parser("finalize", help="check process compliance → READY_FOR_USER or PROVISIONAL_NONCOMPLIANT")
     fn.add_argument("run_dir")
 
@@ -203,9 +212,11 @@ def main(argv=None) -> int:
 
     # ---- Process Assurance Layer handlers (v0.3.1) ----
     if args.cmd == "init-run":
-        m = RunManifest.create(args.run_dir, mode=args.mode, target_tier=args.tier)
+        m = RunManifest.create(args.run_dir, mode=args.mode, target_tier=args.tier,
+                               tension_policy=args.tension)
         print(f"run-manifest created: {m.path}")
-        print(f"  mode={args.mode} tier={args.tier}  next={m.allowed_stage()}")
+        print(f"  mode={args.mode} tier={args.tier} tension={m.data.get('tension_policy')}"
+              f"  next={m.allowed_stage()}")
         return 0
 
     if args.cmd == "next":
@@ -216,6 +227,9 @@ def main(argv=None) -> int:
         else:
             status, _, _ = m.finalize()
             print(f"NO_PENDING_STAGE  finalize={status}")
+        blocked = m.blocked_stages()
+        if blocked:
+            print(f"BLOCKED_STAGES={blocked} (resolve or skip these to advance)")
         return 0
 
     if args.cmd == "complete-stage":
@@ -233,6 +247,16 @@ def main(argv=None) -> int:
         try:
             m.skip_stage(args.stage, args.reason, args.justification)
             print(f"stage {args.stage} → skipped ({args.reason})  next={m.allowed_stage()}")
+        except ValueError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.cmd == "block-stage":
+        m = RunManifest.load(args.run_dir)
+        try:
+            m.block_stage(args.stage, args.reason, args.justification)
+            print(f"stage {args.stage} → BLOCKED ({args.reason})  next={m.allowed_stage()}")
         except ValueError as e:
             print(f"ERROR: {e}", file=sys.stderr)
             return 1
