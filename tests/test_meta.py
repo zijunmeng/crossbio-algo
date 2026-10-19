@@ -12,7 +12,7 @@ def _read(p):
 
 
 def test_all_versions_match():
-    """pyproject == plugin.json == CITATION.cff == CHANGELOG (single source of truth)."""
+    """pyproject == plugin.json == CITATION.cff == CHANGELOG == README Status (single source of truth)."""
     v = re.search(r'^version\s*=\s*"([^"]+)"', _read("pyproject.toml"), re.M).group(1)
     plugin = json.loads(_read(".claude-plugin/plugin.json"))["version"]
     cite = re.search(r'^version:\s*"([^"]+)"', _read("CITATION.cff"), re.M).group(1)
@@ -20,6 +20,9 @@ def test_all_versions_match():
     assert plugin == v, f"plugin.json {plugin} != pyproject {v}"
     assert cite == v, f"CITATION.cff {cite} != {v}"
     assert cl == v, f"CHANGELOG {cl} != {v}"
+    m = re.search(r"^##\s+Status\s*\n+\s*v([0-9]+\.[0-9]+\.[0-9]+)", _read("README.md"), re.M)
+    assert m, "README.md: no '## Status' line starting with a vX.Y.Z version"
+    assert m.group(1) == v, f"README.md Status v{m.group(1)} != pyproject {v}"
 
 
 def test_plugin_homepage_points_to_real_repo():

@@ -91,14 +91,20 @@ crossbio validate-chain <dir>     # schema + provenance + parent-chain + stage-o
 crossbio validate <one.json>      # one artifact: schema + provenance only
 crossbio validate-project <dir>   # scan a project dir, then validate-chain
 crossbio stamp <one.json>         # authoring helper: write the correct provenance_hash
+
+crossbio init-run <dir> --mode standard   # process assurance (v0.3.1): register run-manifest.json
+crossbio next <dir>                       # the ALLOWED stage — the gate blocks jumping ahead
+crossbio complete-stage <dir> <stage>     # link artifact + evidence, mark completed
+crossbio skip-stage <dir> <stage> --reason <code> --justification "why"   # never silently absent
+crossbio finalize <dir>                   # READY_FOR_USER | PROVISIONAL_NONCOMPLIANT (missing list)
 ```
 
 **What it catches** — design↔spec↔code drift: an estimand that changed silently between stages, a `failure_boundary` with no acceptance test tracing back to it, notation shapes that diverged (e.g. `X∈ℝ^{n×p}` in design vs `n×d` in spec), pseudocode that has no code counterpart, or a broken `parent_artifact_id` / `provenance_hash`. Plus the **executable-trace** rules (Phase 1): every acceptance criterion in a **test-requiring** mode (`automated_test` / `simulation` / `benchmark`) MUST link to ≥1 **source-bound** passing test (FB→AC→TEST→RESULT — `crossbio attest` binds the result to the current source; a self-declared `passed` is only an unattested WARNING); a `documented_limitation` MUST NOT be marked `passed`; and a component shown ≤ a simpler alternative is flagged `remove_or_redesign` (complexity kill-switch). The kind of bug that previously slipped through to expert review.
 
 **Run everything:**
 ```bash
-python -m pytest tests/           # 30 validator tests (tests/test_validator.py)
-                                  # + 11 scout tests (examples/scout/test_scout.py)
+python -m pytest tests/ examples/scout/   # 46 tests (validator 34 + process 5 + viability 5 + meta 2)
+                                          # + 11 scout tests (examples/scout/test_scout.py)
 ```
 CI (`.github/workflows/validate.yml`) runs the validator suite plus a skill-frontmatter + plugin-manifest + schema-parse sanity check on every push/PR.
 
@@ -119,7 +125,8 @@ crossbio-algo/
 │   └── _shared/{research-design-handoff.md, artifact-validation.md}
 ├── crossbio_validate/schemas/stage-schemas.json          CANONICAL machine schema ($defs + oneOf per stage)
 ├── crossbio_validate/                  validator CLI package (cli.py, core.py)
-├── tests/test_validator.py             30 validator tests (incl. deliberately-drifted RED cases)
+├── tests/                              46 tests (validator 34 incl. deliberately-drifted RED cases
+│                                       + process 5 + viability 5 + meta 2)
 ├── examples/scout/                     flagship: design/requirements/tasks.md + scout.py + test_scout.py (11 tests)
 └── .github/workflows/validate.yml      CI: validator suite + frontmatter/manifest/schema sanity
 ```
@@ -128,7 +135,7 @@ crossbio-algo/
 Computational biologists / bioinformatians. Generalizable to any domain where you **brainstorm → vet → design → spec** an algorithm or method.
 
 ## Status
-v0.2.4 — the loop is validated end-to-end on one direction (spatial omics), and the stage handoff is now **machine-checkable** via the `crossbio` validator (schema + chain + 8 rules: 5 cross-stage + 3 executable-trace; 26 tests). Roadmap: per-skill baseline tests, multi-domain validation, real-data benchmarks. See `CHANGELOG.md` for the v0.1 → v0.2 → v0.2.4 path.
+v0.3.2 — the loop is validated end-to-end on one direction (spatial omics); the stage handoff is **machine-checkable** via the `crossbio` validator (schema + chain + 8 content rules + source-bound attestation); the workflow is **state-machine-enforced** (v0.3.1 — cannot jump stages, no silent skips); dev-mode ideation requires **paradigm divergence** (v0.3.2 — ≥3 distinct paradigms before committing). Skill-effectiveness benchmark (v0.3.0): bias-free objective harness + 8 domain cases; 2-domain pilot — Standard runs emit validator-passing artifact chains where no-skill runs emit none (`benchmarks/PILOT_REPORT.md`). 57 tests. Roadmap: blinded human-expert grading × 8 domains × {no-skill, Standard, Publication} × N runs — the publishable method paper. See `CHANGELOG.md` for the v0.1 → v0.3.2 path.
 
 ## License
 MIT.
